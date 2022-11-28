@@ -19,6 +19,7 @@
 #include "util/util.cuh"
 #include "../ext/cxxopts.hpp"
 #include <json.hpp>
+#include <loguru.cpp>
 
 int partyNum;
 std::vector<AESObject*> aes_objects;
@@ -59,6 +60,7 @@ void deleteObjects();
 
 int main(int argc, char** argv) {
 
+    loguru::init(argc, argv);
     // Parse options -- retrieve party id and config JSON
     cxxopts::Options options("piranha", "GPU-accelerated platform for MPC computation");
     options.add_options()
