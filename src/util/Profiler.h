@@ -28,6 +28,7 @@ public:
     void dump_comm_rounds();
 
     void add_comm_bytes(size_t bytes, bool tx);
+    void add_intergpu_comm_bytes(size_t bytes, int src_id, int dst_id);
     size_t get_comm_tx_bytes();
     size_t get_comm_rx_bytes();
     void dump_comm_bytes();
@@ -47,6 +48,10 @@ private:
 
     size_t bytes_tx;
     size_t bytes_rx;
+
+    // TODO: not hardcode max number of GPU per party;
+    // intergpu_bytes[i][j] means the number of bytes sent from GPU i to GPU j;
+    size_t intergpu_bytes[8][8];
 };
 
 // TODO global list of profilers

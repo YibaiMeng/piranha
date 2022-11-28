@@ -2,7 +2,11 @@
 #include <iostream>
 
 Profiler::Profiler() : running(false), total(0), mem_mb(0.0), rounds(0), bytes_tx(0), bytes_rx(0), max_mem_mb(0.0) {
-    // nothing else to do
+    for(int i = 0; i < 8; i++) {
+       for(int j = 0; j < 8; j++) {
+            intergpu_bytes[i][j] = 0;
+        }
+    }
 }
 
 void Profiler::start() {
@@ -23,6 +27,13 @@ void Profiler::clear() {
 
     bytes_tx = 0;
     bytes_rx = 0;
+
+    for(int i = 0; i < 8; i++) {
+       for(int j = 0; j < 8; j++) {
+            intergpu_bytes[i][j] = 0;
+        }
+    }
+
 }
 
 void Profiler::accumulate(std::string tag) {
@@ -111,6 +122,12 @@ void Profiler::add_comm_bytes(size_t bytes, bool tx) {
         bytes_rx += bytes;
     }
 }
+
+void Profiler::add_intergpu_comm_bytes(size_t bytes, int src_id, int dst_id) {
+    intergpu_bytes[src_id][dst_id] += bytes;
+}
+
+
 
 size_t Profiler::get_comm_tx_bytes() {
     return bytes_tx;
