@@ -41,6 +41,9 @@ auto evenView = getEvens(actual_data);
 #include "../util/connect.h"
 #include "../util/Profiler.h"
 #include "functors.cuh"
+#include "gpu.h"
+
+#include <loguru.hpp>
 
 extern Profiler comm_profiler;
 extern Profiler memory_profiler;
@@ -53,10 +56,14 @@ class DeviceDataBase {
 
     protected:
 
-        DeviceDataBase() : transmitting(false), hostBuffer(0) {}
+        DeviceDataBase() : transmitting(false), hostBuffer(0) {
+            CUDA_CHECK(cudaGetDevice(&(this->cuda_device_id)));
+        }
 
         DeviceDataBase(Iterator _first, Iterator _last) :
-            first(_first), last(_last), transmitting(false), hostBuffer(0) {}
+            first(_first), last(_last), transmitting(false), hostBuffer(0) {
+            CUDA_CHECK(cudaGetDevice(&(this->cuda_device_id)));
+        }
 
     public:
 
@@ -72,20 +79,26 @@ class DeviceDataBase {
             return end() - begin();
         }
 
+        int cudaDeviceID() const {
+            return this->cuda_device_id;
+        }
+
         void set(Iterator _first, Iterator _last) {
             first = _first; last = _last;
         }
 
         void zero() {
+            CUDA_CHECK(cudaSetDevice(this->cuda_device_id));
             thrust::fill(begin(), end(), static_cast<T>(0));
         }
 
         void fill(T val) {
+            CUDA_CHECK(cudaSetDevice(this->cuda_device_id));
             thrust::fill(begin(), end(), val);
         }
 
         void transmit(size_t party) {
-
+            CUDA_CHECK(cudaSetDevice(this->cuda_device_id));
             if (rtxThread.joinable()) {
                 throw std::runtime_error("DeviceBuffer tx failed: already transmitting or receiving");
             }
@@ -103,7 +116,7 @@ class DeviceDataBase {
         }
 
         void receive(size_t party) {
-
+            CUDA_CHECK(cudaSetDevice(this->cuda_device_id));
             if (rtxThread.joinable()) {
                 throw std::runtime_error("DeviceBuffer rx failed: already transmitting or receiving");
             }
@@ -118,7 +131,7 @@ class DeviceDataBase {
         }
 
         void join() {
-
+            CUDA_CHECK(cudaSetDevice(this->cuda_device_id));
             if (!rtxThread.joinable()) return;
             
             rtxThread.join();
@@ -130,31 +143,37 @@ class DeviceDataBase {
         
         // scalar overloads
         DeviceDataBase<T, Iterator> &operator+=(const T rhs) {
+            CUDA_CHECK(cudaSetDevice(this->cuda_device_id));
             thrust::transform(begin(), end(), begin(), scalar_plus_functor<T>(rhs));
             return *this;
         }
 
         DeviceDataBase<T, Iterator> &operator-=(const T rhs) {
+            CUDA_CHECK(cudaSetDevice(this->cuda_device_id));
             thrust::transform(begin(), end(), begin(), scalar_minus_functor<T>(rhs));
             return *this;
         }
 
         DeviceDataBase<T, Iterator> &operator*=(const T rhs) {
+            CUDA_CHECK(cudaSetDevice(this->cuda_device_id));
             thrust::transform(begin(), end(), begin(), scalar_mult_functor<T>(rhs));
             return *this;
         }
         
         DeviceDataBase<T, Iterator> &operator/=(const T rhs) {
-            thrust::transform(begin(), end(), begin(), scalar_divide_functor<T>(rhs));
+            CUDA_CHECK(cudaSetDevice(this->cuda_device_id));
+            THRUST_CHECK(thrust::transform(begin(), end(), begin(), scalar_divide_functor<T>(rhs)));
             return *this;
         }
 
         DeviceDataBase<T, Iterator> &operator>>=(const T rhs) {
+            CUDA_CHECK(cudaSetDevice(this->cuda_device_id));
             thrust::transform(begin(), end(), begin(), scalar_arith_rshift_functor<T>(rhs));
             return *this;
         }
 
         DeviceDataBase<T, Iterator> &operator<<=(const T rhs) {
+            CUDA_CHECK(cudaSetDevice(this->cuda_device_id));
             thrust::transform(begin(), end(), begin(), scalar_lshift_functor<T>(rhs));
             return *this;
         }
@@ -162,48 +181,56 @@ class DeviceDataBase {
         // vector overloads
         template<typename I2>
         DeviceDataBase<T, Iterator> &operator+=(const DeviceDataBase<T, I2> &rhs) {
+            CUDA_CHECK(cudaSetDevice(this->cuda_device_id));
             thrust::transform(this->begin(), this->end(), rhs.begin(), this->begin(), thrust::plus<T>());
             return *this;
         }
 
         template<typename I2>
         DeviceDataBase<T, Iterator> &operator-=(const DeviceDataBase<T, I2> &rhs) {
+            CUDA_CHECK(cudaSetDevice(this->cuda_device_id));
             thrust::transform(this->begin(), this->end(), rhs.begin(), this->begin(), thrust::minus<T>());
             return *this;
         }
 
         template<typename I2>
         DeviceDataBase<T, Iterator> &operator*=(const DeviceDataBase<T, I2> &rhs) {
+            CUDA_CHECK(cudaSetDevice(this->cuda_device_id));
             thrust::transform(this->begin(), this->end(), rhs.begin(), this->begin(), thrust::multiplies<T>());
             return *this;
         }
 
         template<typename I2>
         DeviceDataBase<T, Iterator> &operator/=(const DeviceDataBase<T, I2> &rhs) {
+            CUDA_CHECK(cudaSetDevice(this->cuda_device_id));
             thrust::transform(this->begin(), this->end(), rhs.begin(), this->begin(), signed_divide_functor<T>());
             return *this;
         }
 
         template<typename I2>
         DeviceDataBase<T, Iterator> &operator^=(const DeviceDataBase<T, I2> &rhs) {
+            CUDA_CHECK(cudaSetDevice(this->cuda_device_id));
             thrust::transform(this->begin(), this->end(), rhs.begin(), this->begin(), thrust::bit_xor<T>());
             return *this;
         }
 
         template<typename I2>
         DeviceDataBase<T, Iterator> &operator&=(const DeviceDataBase<T, I2> &rhs) {
+            CUDA_CHECK(cudaSetDevice(this->cuda_device_id));
             thrust::transform(this->begin(), this->end(), rhs.begin(), this->begin(), thrust::bit_and<T>());
             return *this;
         }
 
         template<typename I2>
         DeviceDataBase<T, Iterator> &operator>>=(const DeviceDataBase<T, I2> &rhs) {
+            CUDA_CHECK(cudaSetDevice(this->cuda_device_id));
             thrust::transform(this->begin(), this->end(), rhs.begin(), this->begin(), arith_rshift_functor<T>());
             return *this;
         }
 
         template<typename I2>
         DeviceDataBase<T, Iterator> &operator<<=(const DeviceDataBase<T, I2> &rhs) {
+            CUDA_CHECK(cudaSetDevice(this->cuda_device_id));
             thrust::transform(this->begin(), this->end(), rhs.begin(), this->begin(), lshift_functor<T>());
             return *this;
         }
@@ -212,10 +239,12 @@ class DeviceDataBase {
 
         Iterator first;
         Iterator last;
+        int cuda_device_id;
 
     private:
 
         bool transmitting;
+        // Note: the contents of the host buffer MAY NOT always be sychronized to the device buffer.
         std::vector<T> hostBuffer;
         std::thread rtxThread;
 };
@@ -254,6 +283,7 @@ class DeviceData<T, BufferIterator<T> > : public DeviceDataBase<T, BufferIterato
         }
 
         DeviceData(std::initializer_list<T> il) : data(il.size()) {
+            CUDA_CHECK(cudaSetDevice(this->cuda_device_id));
             thrust::copy(il.begin(), il.end(), data.begin());
             this->set(data.begin(), data.end());
 
@@ -261,6 +291,7 @@ class DeviceData<T, BufferIterator<T> > : public DeviceDataBase<T, BufferIterato
         }
 
         void resize(size_t n) {
+            CUDA_CHECK(cudaSetDevice(this->cuda_device_id));
             memory_profiler.track_free(data.size() * sizeof(T));
             data.resize(n);
             memory_profiler.track_alloc(n * sizeof(T));
@@ -271,8 +302,25 @@ class DeviceData<T, BufferIterator<T> > : public DeviceDataBase<T, BufferIterato
             return data;
         }
 
-    private:
+        // Transfer the contents of this device buffer to another device buffer on
+        // Note: does not allow casting yet.
+        int copyToDevice(DeviceData<T, BufferIterator<T> >& dst_buffer) {
+            CUDA_CHECK(cudaSetDevice(this->cuda_device_id));
+            if(dst_buffer.size() != this->size()) {
+                LOG_S(FATAL) << "Size of destination DeviceData different from source DeviceData.";
+            }
+            LOG_S(1) << "Copying " << dst_buffer.size() * sizeof(T) << " bytes of data from " << this->cudaDeviceID() << " to " << dst_buffer.cudaDeviceID();
 
+            // first, assert the dest_buffer have enough space.
+            T* dst_ptr = thrust::raw_pointer_cast(dst_buffer.data.data());
+            T* src_ptr = thrust::raw_pointer_cast(data.data());
+            memory_profiler.add_intergpu_comm_bytes(sizeof(T) * this->size(), this->cudaDeviceID(), dst_buffer.cudaDeviceID());
+            CUDA_CHECK(cudaMemcpyPeer((void*)dst_ptr, dst_buffer.cudaDeviceID(), (void*)src_ptr, this->cudaDeviceID(), sizeof(T) * this->size()));
+            return -1;
+        }        
+
+    private:
+        // stores which device data is on
         thrust::device_vector<T> data;
 };
 
