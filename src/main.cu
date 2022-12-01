@@ -23,9 +23,9 @@
 
 int partyNum;
 std::vector<AESObject*> aes_objects;
-//AESObject* aes_indep;
-//AESObject* aes_next;
-//AESObject* aes_prev;
+AESObject* aes_indep;
+AESObject* aes_next;
+AESObject* aes_prev;
 Precompute PrecomputeObject;
 
 extern std::string *addrs;

@@ -272,9 +272,10 @@ class DeviceData<T, BufferIterator<T> > : public DeviceDataBase<T, BufferIterato
                 data(0),
                 DeviceDataBase<T, BufferIterator<T> >(_first, _last) {}
 
-	~DeviceData() {
-		memory_profiler.track_free(data.size() * sizeof(T));
-	}
+        ~DeviceData() {
+            CUDA_CHECK(cudaSetDevice(this->cuda_device_id));
+            memory_profiler.track_free(data.size() * sizeof(T));
+        }
 
         DeviceData(int n) : data(n) {
             this->set(data.begin(), data.end());
