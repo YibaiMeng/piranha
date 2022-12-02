@@ -32,7 +32,7 @@
 /*GLOBAL VARIABLES - LIST OF IP ADDRESSES*/
 extern char** localIPaddrs;
 extern int numberOfAddresses;
-#define NUMCONNECTIONS 3
+extern int NUMCONNECTIONS;
 
 
 //gets the list of IP addresses

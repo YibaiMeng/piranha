@@ -91,6 +91,12 @@ int main(int argc, char** argv) {
     for (int i = 0; i < piranha_config["num_parties"]; i++) {
 	    party_ips.push_back(piranha_config["party_ips"][i]);
     }
+    if (piranha_config["pipeline_parallel"]) {
+        NUMCONNECTIONS = piranah_config["pipeline_parallel_groups"];
+    } else {
+        // TODO: document why the default value is 3.
+        NUMCONNECTIONS = 3;
+    }
     initializeCommunication(party_ips, partyNum, piranha_config["num_parties"]);
 
     synchronize(10000, piranha_config["num_parties"]); // wait for everyone to show up :)

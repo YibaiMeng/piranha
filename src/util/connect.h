@@ -13,6 +13,8 @@
 #include "basicSockets.h"
 #include "../globals.h"
 
+#include <loguru.hpp>
+
 extern BmrNet **communicationSenders;
 extern BmrNet **communicationReceivers;
 
@@ -25,7 +27,7 @@ void initializeCommunicationSerial(int *ports, int num_parties); //Use this for 
 void initializeCommunication(char *filename, int party, int num_parties);
 void initializeCommunication(std::vector<std::string> &ips, int party, int num_parties);
 
-//synchronization functions
+// Synchronization functions
 void sendByte(int player, char* toSend, int length, int conn);
 void receiveByte(int player, int length, int conn);
 void synchronize(int length, int num_parties);
@@ -41,16 +43,16 @@ template<typename T>
 void receiveVector(size_t player, std::vector<T> &vec);
 
 template<typename T>
-void sendVector(size_t player, const std::vector<T> &vec) {
-	if(!communicationSenders[player]->sendMsg(vec.data(), vec.size() * sizeof(T), 0)) {
-        std::cout << "Send vector error" << std::endl;
+void sendVector(size_t player, const std::vector<T> &vec, int channel=0) {
+	if(!communicationSenders[player]->sendMsg(vec.data(), vec.size() * sizeof(T), channel)) {
+        LOG(ERROR, "Send vector error");
     }
 }
 
 template<typename T>
-void receiveVector(size_t player, std::vector<T> &vec) {
-	if(!communicationReceivers[player]->receiveMsg(vec.data(), vec.size() * sizeof(T), 0)) {
-        std::cout << "Receive vector error" << std::endl;
+void receiveVector(size_t player, std::vector<T> &vec, int channel=0) {
+	if(!communicationReceivers[player]->receiveMsg(vec.data(), vec.size() * sizeof(T), channel)) {
+        LOG(ERROR, "Receive vector error");
     }
 }
 
