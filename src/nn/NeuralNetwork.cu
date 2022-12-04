@@ -17,6 +17,7 @@
 #include <math.h>       /* log2 */
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <loguru.hpp>
 
 extern size_t INPUT_SIZE;
 extern size_t NUM_CLASSES;
@@ -29,8 +30,14 @@ extern nlohmann::json piranha_config;
 // input batch, labels
 // get output of last layer, normalize, then subtract from labels for derivates
 template<typename T, template<typename, typename...> typename Share>
-NeuralNetwork<T, Share>::NeuralNetwork(NeuralNetConfig* config, int seed) : input(MINI_BATCH_SIZE * INPUT_SIZE) {
-
+    LOG_S(INFO) << "Loading NeuralNetConfig";
+    int cuda_device_count = -1;
+    CUDA_CHECK(cudaGetDeviceCount(&cuda_device_count));
+    if(cuda_device_count < 0) {
+        LOG_S(FATAL) << "No CUDA Device available. Unable to initialize NeuralNetwork";
+        exit(-1);
+    }
+    int prev_device_id = input.cudaDeviceID();
 	for (int i = 0; i < config->layerConf.size(); i++) {
 		if (config->layerConf[i]->type.compare("FC") == 0) {
 			layers.push_back(new FCLayer<T, Share>((FCConfig *) config->layerConf[i], i, seed+i));
@@ -47,7 +54,7 @@ NeuralNetwork<T, Share>::NeuralNetwork(NeuralNetConfig* config, int seed) : inpu
         } else if (config->layerConf[i]->type.compare("Res") == 0) {
             layers.push_back(new ResLayer<T, Share>((ResLayerConfig *) config->layerConf[i], i, seed+i));
         } else {
-			error("Only FC, CNN, ReLU, Maxpool, Averagepool, ResLayer, and LN layer types currently supported");
+            LOG_S(FATAL) << "Only FC, CNN, ReLU, Maxpool, Averagepool, ResLayer, and LN layer types currently supported.";
         }
 	}
 }

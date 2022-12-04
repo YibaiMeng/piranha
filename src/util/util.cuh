@@ -16,6 +16,7 @@
 #include "../mpc/FPC.h"
 #include "../mpc/OPC.h"
 
+#include <loguru.hpp>
 #define ASSERT_EPSILON 1e-3
 #define RELATIVE_ASSERT_EPSILON 1e-2
 

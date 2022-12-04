@@ -85,7 +85,7 @@ void CNNLayer<T, Share>::forward(const Share<T> &input) {
         //printShareTensor(*const_cast<Share<T> *>(&input), "fw pass input (n=1)", 1, 1, 1, input.size() / conf.batchSize);
     }
 
-	log_print("CNN.forward");
+	LOG_S(1) << "Executing CNN.forward";
 
     this->layer_profiler.start();
     debug_profiler.start();

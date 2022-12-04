@@ -53,7 +53,7 @@ void AveragepoolLayer<T, Share>::forward(const Share<T> &input) {
         //printShareTensor(*const_cast<Share<T> *>(&input), "fw pass input (n=1)", 1, 1, 1, input.size() / conf.batchSize);
     }
 
-	log_print("Averagepool.forward");
+	LOG_S(1) << "Executing Averagepool.forward";
 
     this->layer_profiler.start();
     averagepool_profiler.start();
@@ -113,7 +113,7 @@ void AveragepoolLayer<T, Share>::backward(const Share<T> &delta, const Share<T> 
                 *std::max_element(vals.begin(), vals.end()));
     }
 
-	log_print("Averagepool.backward");
+	LOG_S(1) << "Executing Averagepool.backward";
 
     this->layer_profiler.start();
     averagepool_profiler.start();

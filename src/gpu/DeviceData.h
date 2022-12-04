@@ -263,7 +263,7 @@ class DeviceData<T, BufferIterator<T> > : public DeviceDataBase<T, BufferIterato
     public:
 
         DeviceData() : data(0) {
-            
+            LOG_S(2) << "Empty DeviceData initialized on GPU "  << this->cudaDeviceID();
             // set iterators after data is initialized
             this->set(data.begin(), data.end());
         }
@@ -272,19 +272,21 @@ class DeviceData<T, BufferIterator<T> > : public DeviceDataBase<T, BufferIterato
                 data(0),
                 DeviceDataBase<T, BufferIterator<T> >(_first, _last) {}
 
-	~DeviceData() {
-		memory_profiler.track_free(data.size() * sizeof(T));
-	}
+        ~DeviceData() {
+            LOG_S(2) << "Device Data of size " << this->size() * sizeof(T) << " freed on GPU "  << this->cudaDeviceID();
+            memory_profiler.track_free(data.size() * sizeof(T));
+        }
 
         DeviceData(int n) : data(n) {
+            LOG_S(2) << "Device Data of size " << n * sizeof(T) << " initialized on GPU "  << this->cudaDeviceID();
             this->set(data.begin(), data.end());
-
             memory_profiler.track_alloc(n * sizeof(T));
         }
 
         DeviceData(std::initializer_list<T> il) : data(il.size()) {
             CUDA_CHECK(cudaSetDevice(this->cuda_device_id));
             thrust::copy(il.begin(), il.end(), data.begin());
+            LOG_S(2) << "Device Data of size " << data.size() * sizeof(T) << " initialized on GPU "  << this->cudaDeviceID();
             this->set(data.begin(), data.end());
 
             memory_profiler.track_alloc(il.size() * sizeof(T));

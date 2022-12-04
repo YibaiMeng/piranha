@@ -148,7 +148,7 @@ void MaxpoolLayer<T, Share>::backward(const Share<T> &delta, const Share<T> &for
                 *std::max_element(vals.begin(), vals.end()));
     }
 
-	log_print("Maxpool.computeDelta");
+	LOG_S(1) << "Executing Maxpool.computeDelta";
 
     this->layer_profiler.start();
     maxpool_profiler.start();

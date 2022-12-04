@@ -12,6 +12,7 @@
 #include "../mpc/FPC.h"
 #include "../mpc/OPC.h"
 
+#include <loguru.hpp>
 Profiler matmul_profiler;
 extern Profiler debug_profiler;
 extern nlohmann::json piranha_config;
@@ -82,7 +83,7 @@ void FCLayer<T, Share>::forward(const Share<T> &input) {
         //printShareTensor(*const_cast<Share<T> *>(&input), "fw pass input (n=1)", 1, 1, 1, input.size() / conf.batchSize);
     }
 
-	log_print("FC.forward");
+	LOG_S(1) << "Executing FC.forward";
 
     this->layer_profiler.start();
     debug_profiler.start();
@@ -147,7 +148,7 @@ void FCLayer<T, Share>::backward(const Share<T> &delta, const Share<T> &forwardI
                 *std::max_element(vals.begin(), vals.end()));
     }
     
-	log_print("FC.backward");
+	LOG_S(1) << "Executing FC.backward";
     this->layer_profiler.start();
     debug_profiler.start();
 

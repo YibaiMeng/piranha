@@ -104,8 +104,7 @@ void ReLULayer<T, Share>::backward(const Share<T> &delta, const Share<T> &forwar
                 std::accumulate(vals.begin(), vals.end(), 0.0) / static_cast<float>(vals.size()), 
                 *std::max_element(vals.begin(), vals.end()));
     }
-
-	log_print("ReLU.backward");
+	LOG_S(1) << "Executing ReLU.backward";
 
 	relu_profiler.start();
 	this->layer_profiler.start();

@@ -13,6 +13,7 @@
 #include "../nn/AveragepoolConfig.h"
 #include "../nn/ResLayerConfig.h"
 #include <json.hpp>
+#include <loguru.hpp>
 
 int MINI_BATCH_SIZE;
 int LOG_MINI_BATCH;
@@ -23,7 +24,7 @@ extern nlohmann::json piranha_config;
 
 void loadModel(NeuralNetConfig* config, std::string network_filename) {
 
-    std::cout << "network filename: " << network_filename << std::endl;
+    LOG_S(INFO) << "network filename: " << network_filename;
 
     nlohmann::json model_doc;
 

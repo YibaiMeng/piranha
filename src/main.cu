@@ -19,7 +19,7 @@
 #include "util/util.cuh"
 #include "../ext/cxxopts.hpp"
 #include <json.hpp>
-#include <loguru.cpp>
+#include <loguru.hpp>
 
 int partyNum;
 std::vector<AESObject*> aes_objects;
@@ -85,7 +85,9 @@ int main(int argc, char** argv) {
 
     // Start memory profiler and initialize communication between parties
     memory_profiler.start();
-
+    int cuda_device_count = -1;
+    CUDA_CHECK(cudaGetDeviceCount(&cuda_device_count));
+    LOG_S(INFO) << "Number of available cuda devices: " << cuda_device_count;
     //XXX initializeCommunication(options.ip_file, partyNum);
     std::vector<std::string> party_ips;
     for (int i = 0; i < piranha_config["num_parties"]; i++) {
@@ -100,7 +102,7 @@ int main(int argc, char** argv) {
     initializeCommunication(party_ips, partyNum, piranha_config["num_parties"]);
 
     synchronize(10000, piranha_config["num_parties"]); // wait for everyone to show up :)
-    
+    LOG_S(INFO) << "All " << piranha_config["num_parties"] << " have showed up" << std::endl;
     for (size_t i = 0; i < piranha_config["num_parties"]; i++) {
         // --------------> AES_TODO
         //Get AES strings from file and create vector of AESObjects
@@ -113,36 +115,43 @@ int main(int argc, char** argv) {
 
     // Unit tests
     if (piranha_config["run_unit_tests"]) {
+        LOG_S(0) << "Running unittests";
         int returnCode = runTests(argc, argv);
         if (returnCode != 0 || piranha_config["unit_test_only"]) {
+            LOG_S(ERROR) << "Unittests failed";
             exit(returnCode);
         }
     }
 
-    std::cout << "run unit tests? " << piranha_config["run_unit_tests"] << std::endl;
-
+    LOG_S(INFO) << "Do not run unittests";
     NeuralNetConfig nn_config;
-    std::cout << "config network: " << piranha_config["network"] << std::endl;
+    LOG_S(INFO) << "Loading network config from " << piranha_config["network"];
     loadModel(&nn_config, piranha_config["network"]);
 
 #ifdef ONEPC
+    LOG_S(INFO) << "Running One Party Computation";
     NeuralNetwork<uint64_t, OPC> net(&nn_config, piranha_config["nn_seed"]);
 #else
 #ifdef TWOPC
+    LOG_S(INFO) << "Running Two Party Computation";
+
     NeuralNetwork<uint64_t, TPC> net(&nn_config, piranha_config["nn_seed"]);
 #else
 #ifdef FOURPC
+    LOG_S(INFO) << "Running Four Party Computation";
     NeuralNetwork<uint64_t, FPC> net(&nn_config, piranha_config["nn_seed"]);
 #else
+    LOG_S(INFO) << "Running Three Party Computation";
     NeuralNetwork<uint64_t, RSS> net(&nn_config, piranha_config["nn_seed"]);
 #endif
 #endif
 #endif
 
     net.printNetwork();
-
+    net.printPipelineGroup();
     // Preload network weights if so-configured
     if (piranha_config["preload"]) {
+        LOG_S(INFO) << "Loading network snapshot from" << piranha_config["preload_path"];
         net.loadSnapshot(piranha_config["preload_path"]);
     }
 
@@ -152,6 +161,7 @@ int main(int argc, char** argv) {
     for (int i = 0; i < lr_len; i++) {
 	    lr_schedule.push_back(piranha_config["lr_schedule"][i]);
     }
+    LOG_S(INFO) << "Learning rate schedule per layers: " << piranha_config["lr_schedule"]; 
 
     // Load training and test datasets
     std::ifstream train_data_file(std::string("files/") + nn_config.dataset + "/train_data");
@@ -183,8 +193,10 @@ int main(int argc, char** argv) {
     }
     
     if (piranha_config["test_only"]) {
+        LOG_S(INFO) << "Testing only.";
         test(&net, test_data_file, test_label_file);
     } else { // do training!
+        LOG_S(INFO) << "Training and testing.";
         train(&net, &nn_config, piranha_config["run_name"], train_data_file, train_label_file, test_data_file, test_label_file, lr_schedule);
     }
 
@@ -236,11 +248,8 @@ void test(NeuralNetwork<T, Share> *net, std::ifstream &test_data, std::ifstream 
 
     std::istream_iterator<double> data_it(test_data);
     std::istream_iterator<double> label_it(test_labels);
-
-    if (piranha_config["debug_print"]) {
-        std::cout << std::endl << " == Testing == " << std::endl << std::endl;
-    }
-
+    LOG_S(INFO) << "Start testing";
+    //size_t numIterations = 1;
     size_t numIterations = test_dataset_size / MINI_BATCH_SIZE;
     int correct = 0;
 
@@ -248,10 +257,10 @@ void test(NeuralNetwork<T, Share> *net, std::ifstream &test_data, std::ifstream 
 
         std::vector<double> batch_data(MINI_BATCH_SIZE * INPUT_SIZE);
         std::vector<double> batch_labels(MINI_BATCH_SIZE * NUM_CLASSES);
-
+        LOG_S(1) << "Start loading batch " << i;
         getBatch(test_data, data_it, batch_data);
         getBatch(test_labels, label_it, batch_labels);
-
+        LOG_S(1) << "Loaded batch " << i;
         net->forward(batch_data);
 
         updateAccuracy(net, batch_labels, correct);
@@ -260,7 +269,7 @@ void test(NeuralNetwork<T, Share> *net, std::ifstream &test_data, std::ifstream 
     double acc = ((double)correct) / (numIterations * MINI_BATCH_SIZE);
 
     if (piranha_config["eval_accuracy"]) {
-        printf("test accuracy,%f\n", acc);
+        LOG_F(INFO, "Test Accuracy: %f", acc);
     }
 }
 
@@ -280,14 +289,12 @@ void train(NeuralNetwork<T, Share> *net, NeuralNetConfig *config, std::string ru
         numEpochs = (size_t) piranha_config["custom_epoch_count"];
     } 
 
-    printf("TRAINING, EPOCHS = %d ITERATIONS = %d\n", numEpochs, numIterations);
+    LOG_F(INFO, "TRAINING, EPOCHS = %d ITERATIONS = %d\n", numEpochs, numIterations);
 
     std::istream_iterator<double> data_it(train_data);
     std::istream_iterator<double> label_it(train_labels);
 
-    if (piranha_config["debug_print"]) {
-        std::cout << std::endl << " == Training (" << numEpochs << " epochs) ==" << std::endl;
-    }
+    LOG_S(INFO) << " == Training (" << numEpochs << " epochs) ==";
 
     int lr_ctr = 0;
 
@@ -297,20 +304,14 @@ void train(NeuralNetwork<T, Share> *net, NeuralNetConfig *config, std::string ru
 
     for (int e = 0; e < numEpochs; e++) {
 
-        if (piranha_config["debug_print"]) {
-            std::cout << std::endl << " -- Epoch " << e << " (" << numIterations << " iterations, log_lr = " << learning_rate[e] << ") --" << std::endl;
-        }
+        LOG_S(INFO) << " -- Epoch " << e << " (" << numIterations << " iterations, log_lr = " << learning_rate[e] << ") --";
         log_learning_rate = learning_rate[e];
 
         int correct = 0;
         for (int i = 0; i < numIterations; i++) {
 
             comm_profiler.clear();
-
-            if (piranha_config["debug_print"]) {
-                printf("iteration,%d\n", i);
-            }
-
+            LOG_F(0, "Iteration %d", i);
             std::vector<double> batch_data(MINI_BATCH_SIZE * INPUT_SIZE);
             std::vector<double> batch_labels(MINI_BATCH_SIZE * NUM_CLASSES);
 
@@ -327,14 +328,13 @@ void train(NeuralNetwork<T, Share> *net, NeuralNetConfig *config, std::string ru
 
             if (piranha_config["eval_inference_stats"]) {
                 double fw_ms = toplevel_profiler.get_elapsed("fw-pass");
-                
-                printf("inference iteration (ms),%f\n", fw_ms);
-                printf("inference TX comm (bytes),%d\n", comm_profiler.get_comm_tx_bytes());
-                printf("inference RX comm (bytes),%d\n", comm_profiler.get_comm_rx_bytes());
+                LOG_F(0, "inference iteration (ms),%f\n", fw_ms);
+                LOG_F(0, "inference TX comm (bytes),%d\n", comm_profiler.get_comm_tx_bytes());
+                LOG_F(0, "inference RX comm (bytes),%d\n", comm_profiler.get_comm_rx_bytes());
             }
 
             if (piranha_config["eval_fw_peak_memory"]) {
-                printf("fw pass peak memory (MB), %f\n", memory_profiler.get_max_mem_mb());
+                LOG_F(0, "fw pass peak memory (MB), %f\n", memory_profiler.get_max_mem_mb());
             }
 
             total_comm_tx_mb += ((double)comm_profiler.get_comm_tx_bytes()) / 1024.0 / 1024.0;
@@ -350,17 +350,17 @@ void train(NeuralNetwork<T, Share> *net, NeuralNetConfig *config, std::string ru
 
             if (piranha_config["eval_train_stats"]) {
                 double fw_bw_ms = toplevel_profiler.get_elapsed_all();
-                printf("training iteration (ms),%f\n", fw_bw_ms);
-                printf("training TX comm (MB),%f\n", comm_profiler.get_comm_tx_bytes() / 1024.0 / 1024.0);
-                printf("training RX comm (MB),%f\n", comm_profiler.get_comm_rx_bytes() / 1024.0 / 1024.0);
+                LOG_F(0, "training iteration (ms),%f\n", fw_bw_ms);
+                LOG_F(0, "training TX comm (MB),%f\n", comm_profiler.get_comm_tx_bytes() / 1024.0 / 1024.0);
+                LOG_F(0, "training RX comm (MB),%f\n", comm_profiler.get_comm_rx_bytes() / 1024.0 / 1024.0);
 
                 double comm_ms = comm_profiler.get_elapsed("comm-time");
-                printf("training comm (ms),%f\n", comm_ms);
-                printf("training computation (ms),%f\n", fw_bw_ms - comm_ms);
+                LOG_F(0, "training comm (ms),%f\n", comm_ms);
+                LOG_F(0, "training computation (ms),%f\n", fw_bw_ms - comm_ms);
             }
 
             if (piranha_config["eval_bw_peak_memory"]) {
-                printf("total fw-bw pass peak memory (MB), %f\n", memory_profiler.get_max_mem_mb());
+                LOG_F(0, "total fw-bw pass peak memory (MB), %f\n", memory_profiler.get_max_mem_mb());
             }
 
             total_time_s += toplevel_profiler.get_elapsed_all() / 1000.0;
@@ -381,15 +381,15 @@ void train(NeuralNetwork<T, Share> *net, NeuralNetConfig *config, std::string ru
         }
 
         if (piranha_config["eval_epoch_stats"]) {
-            printf("epoch,%d\n", e);
-            printf("total time (s),%f\n", total_time_s);
-            printf("total tx comm (MB),%f\n", total_comm_tx_mb);
-            printf("total rx comm (MB),%f\n", total_comm_rx_mb);
+            LOG_F(INFO, "epoch,%d\n", e);
+            LOG_F(INFO, "total time (s),%f\n", total_time_s);
+            LOG_F(INFO, "total tx comm (MB),%f\n", total_comm_tx_mb);
+            LOG_F(INFO, "total rx comm (MB),%f\n", total_comm_rx_mb);
         }
 
         double acc = ((double)correct) / (numIterations * MINI_BATCH_SIZE);
         if (piranha_config["eval_accuracy"]) {
-            printf("train accuracy,%f\n", acc);
+            LOG_F(INFO, "train accuracy %f at epoch %i", acc, e);
         }
 
         if (!piranha_config["no_test"]) {
