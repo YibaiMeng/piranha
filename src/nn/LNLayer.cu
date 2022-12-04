@@ -63,7 +63,7 @@ void LNLayer<T, Share>::saveSnapshot(std::string path) {
 }
 
 template<typename T, template<typename, typename...> typename Share>
-void LNLayer<T, Share>::forward(const Share<T> &input) {
+void LNLayer<T, Share>::forward(const Share<T> &input, int micro_batch_idx) {
 
     if (piranha_config["debug_all_forward"]) {
         printf("layer %d\n", this->layerNum);
@@ -163,7 +163,7 @@ void LNLayer<T, Share>::forward(const Share<T> &input) {
 
 //https://kevinzakka.github.io/2016/09/14/batch_normalization/
 template<typename T, template<typename, typename...> typename Share>
-void LNLayer<T, Share>::backward(const Share<T> &delta, const Share<T> &forwardInput) {
+void LNLayer<T, Share>::backward(const Share<T> &delta, const Share<T> &forwardInput, int micro_batch_idx) {
 
     if (piranha_config["debug_all_backward"]) {
         printf("layer %d\n", this->layerNum);

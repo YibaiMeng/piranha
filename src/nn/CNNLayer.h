@@ -29,8 +29,8 @@ class CNNLayer : public Layer<T, Share> {
         void loadSnapshot(std::string path) override;
         void saveSnapshot(std::string path) override;
         void printLayer() override;
-        void forward(const Share<T> &input) override;
-        void backward(const Share<T> &delta, const Share<T> &forwardInput) override;
+        void forward(const Share<T> &input, int micro_batch_idx=-1) override;
+        void backward(const Share<T> &delta, const Share<T> &forwardInput, int micro_batch_idx=-1) override;
 
         //Getters
         Share<T> *getActivation() {return &activations;};

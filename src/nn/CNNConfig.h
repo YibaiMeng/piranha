@@ -20,6 +20,7 @@ public:
 	size_t stride = 0;
 	size_t padding = 0;
 	size_t batchSize = 0;
+	size_t microBatchSize = 0;
 
 	size_t poolSizeX = 1;
 	size_t poolSizeY = 1;

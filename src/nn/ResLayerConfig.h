@@ -9,6 +9,7 @@ class ResLayerConfig : public LayerConfig {
     public:
 
         size_t batchSize;
+        size_t microBatchSize = 0;
         size_t imageHeight;
         size_t imageWidth;
         size_t in_planes;

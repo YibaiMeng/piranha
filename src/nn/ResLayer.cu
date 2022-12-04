@@ -224,7 +224,7 @@ Share<T> *ResLayer<T, Share>::getBlockActivation(Block &b) {
 }
 
 template<typename T, template<typename, typename...> typename Share>
-void ResLayer<T, Share>::forward(const Share<T> &input) {
+void ResLayer<T, Share>::forward(const Share<T> &input, int micro_batch_idx) {
 
     this->layer_profiler.start();
 
@@ -288,7 +288,7 @@ void ResLayer<T, Share>::backwardBlock(int block_idx, Block &b, const Share<T> *
 }
 
 template<typename T, template<typename, typename...> typename Share>
-void ResLayer<T, Share>::backward(const Share<T> &deltas, const Share<T> &forwardInput) {
+void ResLayer<T, Share>::backward(const Share<T> &deltas, const Share<T> &forwardInput, int micro_batch_idx) {
 
     this->layer_profiler.start();
 

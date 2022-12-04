@@ -12,7 +12,7 @@ public:
 	size_t poolSize = 0;		//Filter is of size (poolSize x poolSize)
 	size_t stride = 0;
 	size_t batchSize = 0;
-
+    size_t microBatchSize = 0;
 	MaxpoolConfig(size_t _imageHeight, size_t _imageWidth, size_t _features, 
 				  size_t _poolSize, size_t _stride, size_t _batchSize) : LayerConfig("Maxpool"),
 		imageHeight(_imageHeight),

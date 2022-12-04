@@ -46,7 +46,7 @@ void AveragepoolLayer<T, Share>::printLayer()
 }
 
 template<typename T, template<typename, typename...> typename Share>
-void AveragepoolLayer<T, Share>::forward(const Share<T> &input) {
+void AveragepoolLayer<T, Share>::forward(const Share<T> &input, int micro_batch_idx) {
 
     if (piranha_config["debug_all_forward"]) {
         printf("layer %d\n", this->layerNum);
@@ -96,7 +96,7 @@ void AveragepoolLayer<T, Share>::forward(const Share<T> &input) {
 }
 
 template<typename T, template<typename, typename...> typename Share>
-void AveragepoolLayer<T, Share>::backward(const Share<T> &delta, const Share<T> &forwardInput) {
+void AveragepoolLayer<T, Share>::backward(const Share<T> &delta, const Share<T> &forwardInput, int micro_batch_idx) {
 
     if (piranha_config["debug_all_backward"]) {
         printf("layer %d\n", this->layerNum);

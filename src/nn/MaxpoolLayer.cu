@@ -49,14 +49,14 @@ void MaxpoolLayer<T, Share>::printLayer()
 }
 
 template<typename T, template<typename, typename...> typename Share>
-void MaxpoolLayer<T, Share>::forward(const Share<T> &input) {
+void MaxpoolLayer<T, Share>::forward(const Share<T> &input, int micro_batch_idx) {
 
     if (piranha_config["debug_all_forward"]) {
         printf("layer %d\n", this->layerNum);
         //printShareTensor(*const_cast<Share<T> *>(&input), "fw pass input (n=1)", 1, 1, 1, input.size() / conf.batchSize);
     }
 
-	log_print("Maxpool.forward");
+	LOG_S(1) << "Executing Maxpool.forward";
 
     this->layer_profiler.start();
     maxpool_profiler.start();
@@ -131,7 +131,7 @@ void MaxpoolLayer<T, Share>::forward(const Share<T> &input) {
 }
 
 template<typename T, template<typename, typename...> typename Share>
-void MaxpoolLayer<T, Share>::backward(const Share<T> &delta, const Share<T> &forwardInput) {
+void MaxpoolLayer<T, Share>::backward(const Share<T> &delta, const Share<T> &forwardInput, int micro_batch_idx) {
 
     if (piranha_config["debug_all_backward"]) {
         printf("layer %d\n", this->layerNum);
