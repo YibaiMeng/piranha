@@ -268,6 +268,9 @@ class DeviceData<T, BufferIterator<T> > : public DeviceDataBase<T, BufferIterato
             this->set(data.begin(), data.end());
         }
 
+        // A DeviceData<T, BufferIterator<T>> constructed this way does not store any data. 
+        // It only stores the Iterators that points to the thrust device vector.
+        // Therefore, if *_first got deconstructed, there will be problems.
         DeviceData(BufferIterator<T> _first, BufferIterator<T> _last) :
                 data(0),
                 DeviceDataBase<T, BufferIterator<T> >(_first, _last) {}

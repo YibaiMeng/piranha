@@ -109,6 +109,8 @@ void initializeCommunication(char* filename, int party, int num_parties) {
 void initializeCommunication(std::vector<std::string> &ips, int party, int num_parties) {
 
 	addrs = new std::string[num_parties];
+	// ports[2 * i] stores the port this instance use to send information to party i;
+	// ports[2 * i + 1] stores the port this instance listen on for data from party i;
 	int *ports = new int[num_parties * 2];
 
     for (int i = 0; i < num_parties; i++) {
