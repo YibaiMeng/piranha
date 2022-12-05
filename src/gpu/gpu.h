@@ -5,8 +5,7 @@
 {                                                                                                  \
     cutlass::Status error = status;                                                                \
     if (error != cutlass::Status::kSuccess) {                                                      \
-        std::cerr << "Got cutlass error: " << cutlassGetStatusString(error) << " at: " << __LINE__ \
-                  << std::endl;                                                                    \
+        LOG_S(ERROR) << "Cutlass error " << cutlassGetStatusString(error) << " at " << __FILE__ << ":" << __LINE__;\
     }                                                                                              \
 }
 

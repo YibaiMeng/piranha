@@ -289,7 +289,7 @@ void maxpool_im2row(const DeviceData<T> *im, DeviceData<T> *output,
     output->resize(paddedSize * xThreads * yThreads);
 
     if (paddedSize == filterSize * filterSize) {
-        thrust::copy(unpaddedOutput.begin(), unpaddedOutput.end(), output->begin());
+        THRUST_CHECK(thrust::copy(unpaddedOutput.begin(), unpaddedOutput.end(), output->begin()));
     } else {
         kernel::stride_pad<<<blocksPerGrid,threadsPerBlock>>>(
             thrust::raw_pointer_cast(&unpaddedOutput.begin()[0]),
@@ -436,7 +436,7 @@ void averagepool_expand_delta(const DeviceData<T, I> *input_delta, DeviceData<T,
         input_delta->size(), Din, poolSize
     );
 
-    cudaThreadSynchronize();
+    CUDA_CHECK(cudaThreadSynchronize());
 }
 
 template<typename T, typename I>

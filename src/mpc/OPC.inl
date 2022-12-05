@@ -21,9 +21,18 @@
 #include "Precompute.h"
 #include "../util/functors.h"
 #include "../util/Profiler.h"
+#include "../util/util.cuh"
+
+#include <loguru.hpp>
 
 extern Precompute PrecomputeObject;
 extern Profiler func_profiler;
+
+static void printDevice() {
+    int device_id;
+    CUDA_CHECK(cudaGetDevice(&device_id));
+    LOG_S(2) << "Currently on device " << device_id;
+}
 
 // Functors
 
@@ -84,6 +93,7 @@ void OPCBase<T, I>::fill(T val) {
 
 template<typename T, typename I>
 void OPCBase<T, I>::setPublic(std::vector<double> &v) {
+    CUDA_CHECK(cudaSetDevice(cudaDeviceID()));
     std::vector<T> shifted_vals;
     for (double f : v) {
         shifted_vals.push_back((T) (f * (1 << FLOAT_PRECISION)));
@@ -239,19 +249,32 @@ template<typename T, typename I>
 OPC<T, I>::OPC(DeviceData<T, I> *a) : OPCBase<T, I>(a) {}
 
 template<typename T>
+OPC<T, BufferIterator<T>>::OPC(OPC & i, int start_idx, int end_idx) : OPC<T, BufferIterator<T>>(nullptr) {
+    CHECK_F(start_idx < end_idx, "Start index must be smaller than end index");
+    CHECK_F(end_idx <= i.size(), "End index must be within the size of input i");
+    CHECK_F(start_idx >= 0);
+    // Must set cudaDeviceID, as this is how the DeviceData stores the device id; 
+    CUDA_CHECK(cudaSetDevice(i.cudaDeviceID()));
+    this->shareA = new DeviceData<T>(i.getShare(0)->begin() + start_idx, i.getShare(0)->begin() + end_idx);
+}
+
+template<typename T>
 OPC<T, BufferIterator<T> >::OPC(DeviceData<T> *a) :
     OPCBase<T, BufferIterator<T> >(a) {}
 
 template<typename T>
 OPC<T, BufferIterator<T> >::OPC(size_t n) :
     _shareA(n),
-    OPCBase<T, BufferIterator<T> >(&_shareA) {}
+    OPCBase<T, BufferIterator<T> >(&_shareA) {
+
+        LOG_S(1) << "OPC Share of size " << n * sizeof(T) << " init on device " << this->cudaDeviceID();
+    }
 
 template<typename T>
 OPC<T, BufferIterator<T> >::OPC(std::initializer_list<double> il, bool convertToFixedPoint) :
     _shareA(il.size()),
     OPCBase<T, BufferIterator<T> >(&_shareA) {
-
+    CUDA_CHECK(cudaSetDevice(this->cudaDeviceID()));
     std::vector<T> shifted_vals;
     for (double f : il) {
         if (convertToFixedPoint) {
@@ -269,20 +292,34 @@ void OPC<T, BufferIterator<T> >::resize(size_t n) {
     _shareA.resize(n);
 }
 
+template<typename T>
+void OPC<T, BufferIterator<T> >::copySync( OPC<T, BufferIterator<T> >& dst) {    
+    LOG_S(1) << "Copying data from a share on device " << this->cudaDeviceID()  << " to " << dst.cudaDeviceID();
+    this->shareA->copyToDevice(*dst.shareA);
+}
+
+template<typename T>
+void OPC<T, BufferIterator<T> >::copyAsync( OPC<T, BufferIterator<T> >& dst, cudaStream_t stream) {    
+    LOG_S(1) << "Asynchronous copying data from a share on device " << this->cudaDeviceID()  << " to " << dst.cudaDeviceID();
+    this->shareA->copyAsync(*dst.shareA, stream);
+}
+
 template<typename T, typename I>
 void dividePublic(OPC<T, I> &a, T denominator) {
+    CUDA_CHECK(cudaSetDevice(a.cudaDeviceID()));
     *a.getShare(0) /= denominator;
 }
 
 template<typename T, typename I, typename I2>
 void dividePublic(OPC<T, I> &a, DeviceData<T, I2> &denominators) {
+    CUDA_CHECK(cudaSetDevice(a.cudaDeviceID()));
     assert(denominators.size() == a.size() && "OPC dividePublic powers size mismatch");
     *a.getShare(0) /= denominators;
 }
 
 template<typename T, typename I, typename I2>
 void reconstruct(OPC<T, I> &in, DeviceData<T, I2> &out) {
-
+    CUDA_CHECK(cudaSetDevice(in.cudaDeviceID()));
     out.zero();
     out += *in.getShare(0);
 
@@ -300,9 +337,10 @@ void matmul(const OPC<T> &a, const OPC<T> &b, OPC<T> &c,
 
 template<typename T, typename U, typename I, typename I2, typename I3, typename I4>
 void selectShare(const OPC<T, I> &x, const OPC<T, I2> &y, const OPC<U, I3> &b, OPC<T, I4> &z) {
-
+    CUDA_CHECK(cudaSetDevice(x.cudaDeviceID()));
+    
     assert(x.size() == y.size() && x.size() == b.size() && x.size() == z.size() && "OPC selectShare input size mismatch");
-
+    assert(x.cudaDeviceID() == y.cudaDeviceID() &&  y.cudaDeviceID() == b.cudaDeviceID() &&  b.cudaDeviceID() ==  z.cudaDeviceID());
     thrust::for_each(
         thrust::make_zip_iterator(
             thrust::make_tuple(x.getShare(0)->begin(), y.getShare(0)->begin(), b.getShare(0)->begin(), z.getShare(0)->begin())

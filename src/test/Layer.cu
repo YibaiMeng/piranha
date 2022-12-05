@@ -32,7 +32,7 @@ TYPED_TEST(LayerTest, FCForwardBasic) {
         0, 0, 0, 1,
     };
 
-    FCConfig lconfig(inputDim, batchSize, outputDim);
+    FCConfig lconfig(inputDim, batchSize, 0, outputDim);
     FCLayer<T, LAYER_TEST_SHARE> layer(&lconfig, 0, 0xbeef); 
 
     layer.forward(input);
@@ -59,7 +59,7 @@ TYPED_TEST(LayerTest, FCForwardMNIST) {
     int batchSize = 128;
     int outputDim = 10;
 
-    FCConfig lconfig(inputDim, batchSize, outputDim);
+    FCConfig lconfig(inputDim, batchSize, 0, outputDim);
     FCLayer<T, LAYER_TEST_SHARE> layer(&lconfig, 0, 0xbeef); 
 
     // load weights and biases
@@ -93,7 +93,7 @@ TYPED_TEST(LayerTest, FCForwardSecureML) {
     int batchSize = 128;
     int outputDim = 128;
 
-    FCConfig lconfig(inputDim, batchSize, outputDim);
+    FCConfig lconfig(inputDim, batchSize, 0, outputDim);
     FCLayer<T, LAYER_TEST_SHARE> layer(&lconfig, 0, 0xbeef); 
 
     // load weights and biases
@@ -127,7 +127,7 @@ TYPED_TEST(LayerTest, FCBackwardMNIST) {
     int batchSize = 128;
     int outputDim = 10;
 
-    FCConfig lconfig(inputDim, batchSize, outputDim);
+    FCConfig lconfig(inputDim, batchSize, 0, outputDim);
     FCLayer<T, LAYER_TEST_SHARE> layer(&lconfig, 0, 0xbeef); 
 
     // load weights and biases
@@ -308,8 +308,9 @@ TYPED_TEST(LayerTest, MaxpoolForwardMNIST) {
     int poolSize = 3;
     int stride = 2;
     int batchSize = 128;
+    int microBatchSize = -1;
 
-    MaxpoolConfig lconfig(imageWidth, imageHeight, features, poolSize, stride, batchSize);
+    MaxpoolConfig lconfig(imageWidth, imageHeight, features, poolSize, stride, batchSize, microBatchSize);
     MaxpoolLayer<T, LAYER_TEST_SHARE> layer(&lconfig, 0, 0xbeef);
 
     // load input
@@ -389,7 +390,7 @@ TYPED_TEST(LayerTest, MaxpoolBackwardMNIST) {
     int stride = 2;
     int batchSize = 128;
 
-    MaxpoolConfig lconfig(imageWidth, imageHeight, features, poolSize, stride, batchSize);
+    MaxpoolConfig lconfig(imageWidth, imageHeight, features, poolSize, stride, batchSize, 0);
     MaxpoolLayer<T, LAYER_TEST_SHARE> layer(&lconfig, 0, 0xbeef);
 
     // load input
@@ -1009,7 +1010,7 @@ TYPED_TEST(LayerTest, ResForwardBasic) {
     };
 
     ResLayerConfig lconfig(
-        2, 3, 3, // batch size, height, width
+        2, 0, 3, 3, // batch size, micro batch size, height, width
         2, 4, 1, 2, 1 // in planes, planes, num blocks, stride, expansion
     );
     ResLayer<T, LAYER_TEST_SHARE> layer(&lconfig, 0, 0xbeef); 
@@ -1065,7 +1066,7 @@ TYPED_TEST(LayerTest, ResBackwardBasic) {
     };
 
     ResLayerConfig lconfig(
-        2, 3, 3, // batch size, height, width
+        2, 0, 3, 3, // batch size, micro batch size, height, width
         2, 4, 1, 2, 1 // in planes, planes, num blocks, stride, expansion
     );
     ResLayer<T, LAYER_TEST_SHARE> layer(&lconfig, 0, 0xbeef); 

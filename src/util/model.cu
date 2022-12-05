@@ -19,6 +19,9 @@ int MINI_BATCH_SIZE;
 int LOG_MINI_BATCH;
 extern size_t INPUT_SIZE;
 extern size_t NUM_CLASSES;
+int PIPELINE_GROUPS;
+int MICRO_BATCH_SIZE = -1;
+int LOG_MICRO_BATCH;
 
 extern nlohmann::json piranha_config;
 
@@ -34,10 +37,24 @@ void loadModel(NeuralNetConfig* config, std::string network_filename) {
     INPUT_SIZE = model_doc["input_size"];
     NUM_CLASSES = model_doc["num_classes"];
     MINI_BATCH_SIZE = model_doc["batch_size"];
-    if (piranha_config["custom_batch_size"]) {
+    if(model_doc.find("micro_batch_size") != model_doc.end()) {
+        MICRO_BATCH_SIZE = model_doc["micro_batch_size"];
+    }
+    if (piranha_config.find("custom_batch_size") != piranha_config.end() && piranha_config["custom_batch_size"]) {
         MINI_BATCH_SIZE = piranha_config["custom_batch_size_count"];
     }
+
+    if (piranha_config.find("custom_micro_batch_size") != piranha_config.end() && piranha_config["custom_micro_batch_size"]) {
+        MICRO_BATCH_SIZE = piranha_config["custom_micro_batch_size_count"];
+    }
+    if(piranha_config.find("pipeline_parallel") == piranha_config.end() || !piranha_config["pipeline_parallel"]) {
+        MICRO_BATCH_SIZE = MINI_BATCH_SIZE;
+    } else if(MICRO_BATCH_SIZE == -1 && piranha_config.find("pipeline_parallel") != piranha_config.end() && piranha_config["pipeline_parallel"]) {
+        LOG_F(FATAL, "Must specify micro batch size when pipeline parallel is enabled.");
+    }  
+
     LOG_MINI_BATCH = log2(MINI_BATCH_SIZE); 
+    LOG_MICRO_BATCH = log2(MICRO_BATCH_SIZE);
 
     config->dataset = model_doc["dataset"];
 
@@ -50,13 +67,15 @@ void loadModel(NeuralNetConfig* config, std::string network_filename) {
             FCConfig* c = new FCConfig(
                 l["input_dim"],
                 MINI_BATCH_SIZE,
+                MICRO_BATCH_SIZE,
                 l["output_dim"]
             );
             config->addLayer(c);
         } else if (l["layer"] == "relu") {
             ReLUConfig* c = new ReLUConfig(
                 l["input_dim"],
-                MINI_BATCH_SIZE
+                MINI_BATCH_SIZE,
+                MICRO_BATCH_SIZE
             );
             config->addLayer(c);
         } else if (l["layer"] == "cnn") {
@@ -68,7 +87,8 @@ void loadModel(NeuralNetConfig* config, std::string network_filename) {
                 l["filter_hw"][0], // only looks at one filter dimension right now
                 l["stride"],
                 l["padding"],
-                MINI_BATCH_SIZE
+                MINI_BATCH_SIZE,
+                MICRO_BATCH_SIZE
             );
             config->addLayer(c);
         } else if (l["layer"] == "maxpool") {
@@ -78,7 +98,8 @@ void loadModel(NeuralNetConfig* config, std::string network_filename) {
                 l["in_channels"],
                 l["pool_hw"][0], // only looks at one pool dimension right now
                 l["stride"],
-                MINI_BATCH_SIZE
+                MINI_BATCH_SIZE,
+                MICRO_BATCH_SIZE
             );
             config->addLayer(c);
         } else if (l["layer"] == "averagepool") {
@@ -88,18 +109,21 @@ void loadModel(NeuralNetConfig* config, std::string network_filename) {
                 l["in_channels"],
                 l["pool_hw"][0], // only looks at one pool dimension right now
                 l["stride"],
-                MINI_BATCH_SIZE
+                MINI_BATCH_SIZE,
+                MICRO_BATCH_SIZE              
             );
             config->addLayer(c);
         } else if (l["layer"] == "ln") {
             LNConfig* c = new LNConfig(
                 l["input_dim"],
-                MINI_BATCH_SIZE
+                MINI_BATCH_SIZE,
+                MICRO_BATCH_SIZE
             );
             config->addLayer(c);
         } else if (l["layer"] == "res") {
             ResLayerConfig* c = new ResLayerConfig(
                 MINI_BATCH_SIZE,
+                MICRO_BATCH_SIZE,
                 l["input_hw"][0],
                 l["input_hw"][1],
                 l["in_planes"],
@@ -112,6 +136,13 @@ void loadModel(NeuralNetConfig* config, std::string network_filename) {
         } else {
             assert(false && "layer type not supported");
         }
+        int device_partition = 0;
+        if(l.find("cuda_device") != l.end()) {
+            device_partition = l["cuda_device"];
+        }
+        config->layerCUDADevice.push_back(device_partition);
+        //config->micro_batch_size = MICRO_BATCH_SIZE;
+
     }
 }
 

@@ -1,5 +1,6 @@
 #include <iostream>
 #include <string>
+#include <sstream>
 
 #include "globals.h"
 #include "mpc/AESObject.h"
@@ -59,8 +60,8 @@ void getBatch(std::ifstream &, std::istream_iterator<double> &, std::vector<doub
 void deleteObjects();
 
 int main(int argc, char** argv) {
-
     loguru::init(argc, argv);
+	loguru::add_file("everything.log", loguru::Append, loguru::Verbosity_MAX);
     // Parse options -- retrieve party id and config JSON
     cxxopts::Options options("piranha", "GPU-accelerated platform for MPC computation");
     options.add_options()
@@ -94,7 +95,9 @@ int main(int argc, char** argv) {
 	    party_ips.push_back(piranha_config["party_ips"][i]);
     }
     if (piranha_config["pipeline_parallel"]) {
-        NUMCONNECTIONS = piranah_config["pipeline_parallel_groups"];
+        // TODO: so far the information regarding pipeline parallelism is stored in multiple places.
+        NUMCONNECTIONS = piranha_config["pipeline_parallel_groups"];
+        PIPELINE_GROUPS = piranha_config["pipeline_parallel_groups"];
     } else {
         // TODO: document why the default value is 3.
         NUMCONNECTIONS = 3;
@@ -102,7 +105,7 @@ int main(int argc, char** argv) {
     initializeCommunication(party_ips, partyNum, piranha_config["num_parties"]);
 
     synchronize(10000, piranha_config["num_parties"]); // wait for everyone to show up :)
-    LOG_S(INFO) << "All " << piranha_config["num_parties"] << " have showed up" << std::endl;
+    LOG_S(INFO) << "All " << piranha_config["num_parties"] << " parties have showed up";
     for (size_t i = 0; i < piranha_config["num_parties"]; i++) {
         // --------------> AES_TODO
         //Get AES strings from file and create vector of AESObjects
@@ -127,7 +130,13 @@ int main(int argc, char** argv) {
     NeuralNetConfig nn_config;
     LOG_S(INFO) << "Loading network config from " << piranha_config["network"];
     loadModel(&nn_config, piranha_config["network"]);
-
+    if(piranha_config["pipeline_parallel"]) {
+        LOG_S(INFO) << "Pipeline parallel enabled. Each minibatch of " << MINI_BATCH_SIZE << " elements will be split into microbatchs of " << MICRO_BATCH_SIZE;
+    }
+    // TODO: more elegant solution?
+    // This hack is because input is initalized using a initializer list. 
+    // Therefore we cannot set cudaDevice in the constructor.
+    CUDA_CHECK(cudaSetDevice(nn_config.layerCUDADevice.at(0)));
 #ifdef ONEPC
     LOG_S(INFO) << "Running One Party Computation";
     NeuralNetwork<uint64_t, OPC> net(&nn_config, piranha_config["nn_seed"]);
@@ -221,7 +230,7 @@ int main(int argc, char** argv) {
 
 template<typename T, template<typename, typename...> typename Share>
 void updateAccuracy(NeuralNetwork<T, Share> *net, std::vector<double> &labels, int &correct) {
-
+    CUDA_CHECK(cudaSetDevice(net->layers[net->layers.size() - 1]->cudaDeviceID()));
     Share<T> *activations = net->layers[net->layers.size() - 1]->getActivation();
     //printShareFinite(*activations, "last layer activations", 10);
 
@@ -321,7 +330,11 @@ void train(NeuralNetwork<T, Share> *net, NeuralNetConfig *config, std::string ru
             Profiler toplevel_profiler;
 
             toplevel_profiler.start();
-            net->forward(batch_data);
+            if(piranha_config["pipeline_parallel"]) {
+                net->forward_pipeline(batch_data);
+            } else {
+                net->forward(batch_data);
+            }
             toplevel_profiler.accumulate("fw-pass");
 
             updateAccuracy(net, batch_labels, correct);
@@ -345,6 +358,8 @@ void train(NeuralNetwork<T, Share> *net, NeuralNetConfig *config, std::string ru
             }
 
             toplevel_profiler.start();
+            // Due to implementation reasons, there is no "backward_pipeline". 
+            // piranha_config["pipeline_parallel"]) is checked inside the function.
             net->backward(batch_labels);
             toplevel_profiler.accumulate("bw-pass");
 

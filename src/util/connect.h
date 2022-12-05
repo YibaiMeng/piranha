@@ -38,21 +38,21 @@ void resume_communication();
 void end_communication(std::string str);
 
 template<typename T>
-void sendVector(size_t player, const std::vector<T> &vec);
+void sendVector(size_t player, const std::vector<T> &vec, int channel=0);
 template<typename T>
-void receiveVector(size_t player, std::vector<T> &vec);
+void receiveVector(size_t player, std::vector<T> &vec, int channel=0);
 
 template<typename T>
-void sendVector(size_t player, const std::vector<T> &vec, int channel=0) {
+void sendVector(size_t player, const std::vector<T> &vec, int channel) {
 	if(!communicationSenders[player]->sendMsg(vec.data(), vec.size() * sizeof(T), channel)) {
-        LOG(ERROR, "Send vector error");
+        LOG_F(ERROR, "Send vector error");
     }
 }
 
 template<typename T>
-void receiveVector(size_t player, std::vector<T> &vec, int channel=0) {
+void receiveVector(size_t player, std::vector<T> &vec, int channel) {
 	if(!communicationReceivers[player]->receiveMsg(vec.data(), vec.size() * sizeof(T), channel)) {
-        LOG(ERROR, "Receive vector error");
+        LOG_F(ERROR, "Receive vector error");
     }
 }
 

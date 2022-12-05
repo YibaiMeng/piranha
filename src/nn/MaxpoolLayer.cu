@@ -16,7 +16,7 @@ Profiler MaxpoolLayer<T, Share>::maxpool_profiler;
 template<typename T, template<typename, typename...> typename Share>
 MaxpoolLayer<T, Share>::MaxpoolLayer(MaxpoolConfig* conf, int _layerNum, int seed) : Layer<T, Share>(_layerNum),
  	conf(conf->imageHeight, conf->imageWidth, conf->features, 
-	  		conf->poolSize, conf->stride, conf->batchSize),
+	  		conf->poolSize, conf->stride, conf->batchSize, conf->microBatchSize),
  	activations(conf->batchSize * conf->features * 
 			(((conf->imageWidth - conf->poolSize)/conf->stride) + 1) * 
  		    (((conf->imageHeight - conf->poolSize)/conf->stride) + 1)),

@@ -95,7 +95,8 @@ private:
 	char * host;
 	unsigned int port;
 	bool is_JustServer;
-	int socketFd[NUMCONNECTIONS];
+	std::vector<int> socketFd;
+	//int socketFd[NUMCONNECTIONS];
 	#ifdef _WIN32
 	    PCSTR Cport;
 		WSADATA wsa;

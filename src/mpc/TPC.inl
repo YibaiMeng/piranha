@@ -23,6 +23,8 @@
 #include "../util/functors.h"
 #include "../util/Profiler.h"
 
+#include <loguru.hpp>
+
 extern Precompute PrecomputeObject;
 extern Profiler comm_profiler;
 extern Profiler func_profiler;
@@ -326,6 +328,16 @@ int TPCBase<T, I>::numShares() {
     return 1;
 }
 
+template<typename T>
+TPC<T, BufferIterator<T>>::TPC(TPC & i, int start_idx, int end_idx) : TPC<T, BufferIterator<T>>(nullptr) {
+    CHECK_F(start_idx < end_idx, "Start index must be smaller than end index");
+    CHECK_F(end_idx <= i.size(), "End index must be within the size of input i");
+    CHECK_F(start_idx >= 0);
+    // Must set cudaDeviceID, as this is how the DeviceData stores the device id; 
+    CUDA_CHECK(cudaSetDevice(i.cudaDeviceID()));
+    this->shareA = new DeviceData<T>(i.getShare(0)->begin() + start_idx, i.getShare(0)->begin() + end_idx);
+}
+
 template<typename T, typename I>
 TPC<T, I>::TPC(DeviceData<T, I> *a) : TPCBase<T, I>(a) {}
 
@@ -342,6 +354,7 @@ template<typename T>
 TPC<T, BufferIterator<T> >::TPC(std::initializer_list<double> il, bool convertToFixedPoint) :
     _shareA(il.size()),
     TPCBase<T, BufferIterator<T> >(&_shareA) {
+    CUDA_CHECK(cudaSetDevice(this->cudaDeviceID()));
 
     std::vector<T> shifted_vals;
     for (double f : il) {
@@ -365,6 +378,19 @@ TPC<T, BufferIterator<T> >::TPC(std::initializer_list<double> il, bool convertTo
 template<typename T>
 void TPC<T, BufferIterator<T> >::resize(size_t n) {
     _shareA.resize(n);
+}
+
+template<typename T>
+void TPC<T, BufferIterator<T> >::copySync(TPC<T, BufferIterator<T> >& dst) {    
+    LOG_S(1) << "Copying data from a share on device " << this->cudaDeviceID()  << " to " << dst.cudaDeviceID();
+    this->shareA->copyToDevice(*dst.shareA);
+}
+
+template<typename T>
+void TPC<T, BufferIterator<T> >::copyAsync(TPC<T, BufferIterator<T> >& dst, cudaStream_t stream) {    
+    LOG_S(1) << "Asynchronous copying data from a share on device " << this->cudaDeviceID()  << " to " << dst.cudaDeviceID();
+    // TODO: Evaluate whether we should have more streams, since GPUs may have more that one copying unit.
+    this->shareA->copyAsync(*dst.shareA, stream);
 }
 
 template<typename T, typename I>
@@ -586,6 +612,7 @@ template<typename T, typename U, typename I, typename I2, typename I3, typename 
 void selectShare(const TPC<T, I> &x, const TPC<T, I2> &y, const TPC<U, I3> &b, TPC<T, I4> &z) {
 
     assert(x.size() == y.size() && x.size() == b.size() && x.size() == z.size() && "TPC selectShare input size mismatch");
+    assert(x.cudaDeviceID() == y.cudaDeviceID() &&  y.cudaDeviceID() == b.cudaDeviceID() &&  b.cudaDeviceID() ==  z.cudaDeviceID());
 
     //TO_BE_DONE
     TPC<T> c(x.size());

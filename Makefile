@@ -3,11 +3,11 @@ DEBUG_BINARY=piranha-debug
 BUILD_DIR=build
 DEBUG_DIR=debug
 
-CUDA_VERSION=11.5
+CUDA_VERSION=11.7
 CUTLASS_PATH=ext/cutlass
 LOGURU_PATH=ext/
 CXX=/usr/local/cuda-$(CUDA_VERSION)/bin/nvcc
-FLAGS := -Xcompiler="-O3,-w,-std=c++14,-pthread,-msse4.1,-maes,-msse2,-mpclmul,-fpermissive,-fpic,-pthread" -Xcudafe "--diag_suppress=declared_but_not_referenced" -DLOGURU_WITH_STREAMS=1
+FLAGS := -ccbin=/usr/bin/g++-10 -Xcompiler="-O3,-w,-std=c++14,-pthread,-msse4.1,-maes,-msse2,-mpclmul,-fpermissive,-fpic,-pthread" -Xcudafe "--diag_suppress=declared_but_not_referenced" -DLOGURU_WITH_STREAMS=1 -DONEPC
 DEBUG_FLAGS := -Xcompiler="-O0,-g,-w,-std=c++14,-pthread,-msse4.1,-maes,-msse2,-mpclmul,-fpermissive,-fpic,-pthread" -Xcudafe "--diag_suppress=declared_but_not_referenced"
 
 PIRANHA_FLAGS :=
@@ -22,14 +22,16 @@ DEBUG_OBJ_FILES   += $(addprefix $(DEBUG_DIR)/, $(notdir $(SRC_CU_FILES:.cu=.o))
 HEADER_FILES      := $(wildcard src/*.h src/**/*.h src/*.cuh src/**/*.cuh src/*.inl src/**/*.inl)
 
 LIBS := -lcrypto -lssl -lcudart -lcuda -lgtest -lcublas
-OBJ_INCLUDES := -I '/usr/local/cuda-$(CUDA_VERSION)/include' -I '$(CUTLASS_PATH)/include' -I '$(CUTLASS_PATH)/tools/util/include' -I 'include' -I '$(LOGURU_PATH)' 
-INCLUDES := $(OBJ_INCLUDES), -L./ -L/usr/local/cuda-$(CUDA_VERSION)/lib64 -L$(CUTLASS_PATH)/build/tools/library
+OBJ_INCLUDES := -I '/usr/local/cuda-$(CUDA_VERSION)/include' -I '$(CUTLASS_PATH)/include' -I '$(CUTLASS_PATH)/tools/util/include' -I 'include' -I '$(LOGURU_PATH)' -I $(CONDA_PREFIX)/include 
+INCLUDES := $(OBJ_INCLUDES) -L./ -L/usr/local/cuda-$(CUDA_VERSION)/lib64 -L$(CUTLASS_PATH)/build/tools/library -L$(CONDA_PREFIX)/lib
 
 TEST :=
 
 ################################# OPTIONS ###############################################
 CONFIG_FILE := config.json
 #########################################################################################
+
+print-%  : ; @echo $* = $($*)
 
 all: $(BINARY)
 

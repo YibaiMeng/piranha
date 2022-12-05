@@ -66,6 +66,9 @@ class OPCBase {
         OPCBase<T, I> &operator^=(const OPCBase<T, I2> &rhs);
         template<typename I2>
         OPCBase<T, I> &operator&=(const OPCBase<T, I2> &rhs);
+        int cudaDeviceID() const {
+            return shareA->cudaDeviceID();
+        }        
 
     protected:
         
@@ -84,12 +87,18 @@ template<typename T>
 class OPC<T, BufferIterator<T> > : public OPCBase<T, BufferIterator<T> > {
 
     public:
-
+        /// Create a "reference" of i, with only the data between start_idx and end_idx. 
+        /// start_idx is inclusive, while end_idx is exclusive.
+        OPC(OPC & i, int start_idx, int end_idx);
         OPC(DeviceData<T> *a);
         OPC(size_t n);
         OPC(std::initializer_list<double> il, bool convertToFixedPoint = true);
 
         void resize(size_t n);
+        void copySync(OPC& dst_share);
+        /// Asynchronously copy data to dst_share on another device;
+        void copyAsync(OPC& dst_share, cudaStream_t stream);
+
 
     private:
 

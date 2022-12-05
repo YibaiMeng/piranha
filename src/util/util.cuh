@@ -56,15 +56,15 @@ void fromFixed(std::vector<T> &v, std::vector<double> &r) {
 template<typename T, typename I>
 void copyToHost(DeviceData<T, I> &device_data, std::vector<double> &host_data, bool convertFixed=true) {
     typedef typename std::make_signed<T>::type S;
-
+    CUDA_CHECK(cudaSetDevice(device_data.cudaDeviceID()));
     if (convertFixed) {
         std::vector<T> host_temp(device_data.size());
-        thrust::copy(device_data.begin(), device_data.end(), host_temp.begin());
+        THRUST_CHECK(thrust::copy(device_data.begin(), device_data.end(), host_temp.begin()));
 
         fromFixed(host_temp, host_data);
     } else {
         std::vector<S> host_temp(device_data.size());
-        thrust::copy(device_data.begin(), device_data.end(), host_temp.begin());
+        THRUST_CHECK(thrust::copy(device_data.begin(), device_data.end(), host_temp.begin()));
 
         std::copy(host_temp.begin(), host_temp.end(), host_data.begin());
     }
@@ -72,6 +72,7 @@ void copyToHost(DeviceData<T, I> &device_data, std::vector<double> &host_data, b
 
 template<typename T, typename I, template<typename, typename...> typename Share>
 void copyToHost(Share<T, I> &share, std::vector<double> &host_data, bool convertFixed=true) {
+    CUDA_CHECK(cudaSetDevice(share.cudaDeviceID()));
 
     DeviceData<T> db(share.size());
     reconstruct(share, db);
@@ -81,6 +82,7 @@ void copyToHost(Share<T, I> &share, std::vector<double> &host_data, bool convert
 
 template<typename T, typename I>
 void printDeviceData(DeviceData<T, I> &data, const char *name, bool convertFixed=true) {
+    CUDA_CHECK(cudaSetDevice(data.cudaDeviceID()));
 
     std::vector<double> host_data(data.size());
     copyToHost(data, host_data, convertFixed);
@@ -94,6 +96,7 @@ void printDeviceData(DeviceData<T, I> &data, const char *name, bool convertFixed
 
 template<typename T, typename I>
 void printDeviceData(const DeviceData<T, I> &data, const char *name, bool convertFixed=true) {
+    CUDA_CHECK(cudaSetDevice(data.cudaDeviceID()));
 
     DeviceData<T, I> *data_ptr = const_cast<DeviceData<T, I> *>(&data);
     printDeviceData(*data_ptr, name, convertFixed);
@@ -101,6 +104,7 @@ void printDeviceData(const DeviceData<T, I> &data, const char *name, bool conver
 
 template<typename T, typename I>
 void printDeviceDataFinite(DeviceData<T, I> &data, const char *name, size_t size, bool convertFixed=true) {
+    CUDA_CHECK(cudaSetDevice(data.cudaDeviceID()));
 
     //assert(data.size() >= size && "print finite size mismatch");
 
@@ -117,6 +121,7 @@ void printDeviceDataFinite(DeviceData<T, I> &data, const char *name, size_t size
 
 template<typename T, typename I, template<typename, typename...> typename Share>
 void printShare(Share<T, I> &data, const char *name, bool convertFixed=true) {
+    CUDA_CHECK(cudaSetDevice(data.cudaDeviceID()));
 
     std::vector<double> host_data(data.size());
     copyToHost(data, host_data, convertFixed);
@@ -130,6 +135,7 @@ void printShare(Share<T, I> &data, const char *name, bool convertFixed=true) {
 
 template<typename T, typename I, template<typename, typename...> typename Share>
 void printShare(const Share<T, I> &data, const char *name, bool convertFixed=true) {
+    CUDA_CHECK(cudaSetDevice(data.cudaDeviceID()));
 
     Share<T, I> *data_ptr = const_cast<Share<T, I> *>(&data);
     std::vector<double> host_data(data_ptr->size());
@@ -144,6 +150,7 @@ void printShare(const Share<T, I> &data, const char *name, bool convertFixed=tru
 
 template<typename T, typename I, template<typename, typename...> typename Share>
 void printShareFinite(Share<T, I> &data, const char *name, size_t size, bool convertFixed=true) {
+    CUDA_CHECK(cudaSetDevice(data.cudaDeviceID()));
 
     //assert(data.size() >= size && "print finite size mismatch");
 
@@ -160,6 +167,7 @@ void printShareFinite(Share<T, I> &data, const char *name, size_t size, bool con
 
 template<typename T, typename I, template<typename, typename...> typename Share>
 void printShareFinite(const Share<T, I> &data, const char *name, size_t size, bool convertFixed=true) {
+    CUDA_CHECK(cudaSetDevice(data.cudaDeviceID()));
 
     Share<T, I> *data_ptr = const_cast<Share<T, I> *>(&data);
     printShareFinite(*data_ptr, name, size, convertFixed);
@@ -167,6 +175,7 @@ void printShareFinite(const Share<T, I> &data, const char *name, size_t size, bo
 
 template<typename T, typename I, template<typename, typename...> typename Share>
 void printShareLinear(Share<T, I> &data, size_t size, bool convertFixed=true) {
+    CUDA_CHECK(cudaSetDevice(data.cudaDeviceID()));
 
     //assert(data.size() >= size && "print finite size mismatch");
 
@@ -181,6 +190,7 @@ void printShareLinear(Share<T, I> &data, size_t size, bool convertFixed=true) {
 
 template<typename T, typename I, template<typename, typename...> typename Share>
 void printShareMatrix(Share<T, I> &data, const char *name, size_t rows, size_t cols, bool transpose=false, bool convertFixed=true) {
+    CUDA_CHECK(cudaSetDevice(data.cudaDeviceID()));
 
     std::vector<double> host_data(data.size());
     copyToHost(data, host_data, convertFixed);
@@ -202,6 +212,7 @@ void printShareMatrix(Share<T, I> &data, const char *name, size_t rows, size_t c
 template<typename T, typename I, template<typename, typename...> typename Share>
 void printShareTensor(Share<T, I> &data, const char *name,
         size_t dim0, size_t dim1, size_t dim2, size_t dim3, bool convertFixed=true) {
+    CUDA_CHECK(cudaSetDevice(data.cudaDeviceID()));
 
     std::vector<double> host_data(data.size());
     copyToHost(data, host_data, convertFixed);
@@ -235,6 +246,7 @@ void printShareTensor(Share<T, I> &data, const char *name,
 
 template<typename T, typename I, template<typename, typename...> typename Share>
 void printIndividualShares(Share<T, I> &data, const char *name, bool convertFixed=true) {
+    CUDA_CHECK(cudaSetDevice(data.cudaDeviceID()));
 
     std::cout << name << " (party " << partyNum << ") :" << std::endl;
     for (int i = 0; i < data.numShares(); i++) {
@@ -245,6 +257,7 @@ void printIndividualShares(Share<T, I> &data, const char *name, bool convertFixe
 
 template<typename T, typename I, template<typename, typename...> typename Share>
 void printIndividualSharesFinite(Share<T, I> &data, const char *name, size_t size, bool convertFixed=true) {
+    CUDA_CHECK(cudaSetDevice(data.cudaDeviceID()));
 
     std::cout << name << " (party " << partyNum << ") :" << std::endl;
     for (int i = 0; i < data.numShares(); i++) {
@@ -264,7 +277,7 @@ void loadDeviceDataFromFile(std::string filename, DeviceData<T, I> &dest) {
     std::vector<T> fixedPointValues(dest.size());
     toFixed(f_iterator, fixedPointValues);
 
-    thrust::copy(fixedPointValues.begin(), fixedPointValues.end(), dest.begin());
+    THRUST_CHECK(thrust::copy(fixedPointValues.begin(), fixedPointValues.end(), dest.begin()));
 
     f.close();
 }

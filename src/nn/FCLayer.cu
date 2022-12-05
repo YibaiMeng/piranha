@@ -20,9 +20,9 @@ extern nlohmann::json piranha_config;
 template<typename T, template<typename, typename...> typename Share>
 FCLayer<T, Share>::FCLayer(FCConfig *conf, int _layerNum, int seed) :
         Layer<T, Share>(_layerNum),
-        conf(conf->inputDim, conf->batchSize, conf->outputDim),
-        activations(conf->batchSize * conf->outputDim), 
-        deltas(conf->batchSize * conf->inputDim),
+        conf(conf->inputDim, conf->batchSize, conf->microBatchSize, conf->outputDim),
+        _activations(conf->batchSize * conf->outputDim), 
+        _deltas(conf->batchSize * conf->inputDim),
         weights(conf->inputDim * conf->outputDim),
         biases(conf->outputDim) {
 	initialize(_layerNum, seed);
@@ -76,8 +76,8 @@ void FCLayer<T, Share>::printLayer() {
 }
 
 template<typename T, template<typename, typename...> typename Share>
-void FCLayer<T, Share>::forward(const Share<T> &input) {
-
+void FCLayer<T, Share>::forward(const Share<T> &input, int micro_batch_idx) {
+    CUDA_CHECK(cudaSetDevice(input.cudaDeviceID()));
     if (piranha_config["debug_all_forward"]) {
         printf("layer %d\n", this->layerNum);
         //printShareTensor(*const_cast<Share<T> *>(&input), "fw pass input (n=1)", 1, 1, 1, input.size() / conf.batchSize);
@@ -87,31 +87,37 @@ void FCLayer<T, Share>::forward(const Share<T> &input) {
 
     this->layer_profiler.start();
     debug_profiler.start();
-
-    activations.zero();
     
-	size_t rows = conf.batchSize;
+    Share<T>* activations; 
+    if(micro_batch_idx == -1) {
+        activations = &_activations;
+    } else {
+        CHECK_F(input.size()  == MICRO_BATCH_SIZE * conf.inputDim, "the size of input must be consistent with the mumber of elements per microbatch");
+        activations = new Share<T>(_activations, micro_batch_idx * MICRO_BATCH_SIZE * conf.outputDim, (micro_batch_idx+1) * MICRO_BATCH_SIZE * conf.outputDim); 
+    }
+    activations->zero();
+    
+	size_t rows = MICRO_BATCH_SIZE; 
 	size_t columns = conf.outputDim;
 	size_t common_dim = conf.inputDim;
 	size_t size = rows*columns;
 
     //std::cout << "before matmul" << std::endl;
-    //printMemUsage();
-    
+    printMemUsage();
     matmul_profiler.start();
-    matmul(input, weights, activations,
+    matmul(input, weights, *activations,
             rows, columns, common_dim, true, true, true, (T)FLOAT_PRECISION);
     matmul_profiler.accumulate("fc-matmul");
 
     //std::cout << "after matmul" << std::endl;
-    //printMemUsage();
+    printMemUsage();
     
     // add biases to each column
-    //std::cout << "rows " << rows << " cols " << columns << std::endl;
+    std::cout << "rows " << rows << " cols " << columns << std::endl;
     for (int share = 0; share < Share<T>::numShares(); share++) {
 	//std::cout << "elementVectorAdd - fc-forward" << std::endl;
         gpu::elementVectorAdd(
-            activations.getShare(share),
+            activations->getShare(share),
             biases.getShare(share), false, columns, rows
         );
     }
@@ -120,8 +126,8 @@ void FCLayer<T, Share>::forward(const Share<T> &input) {
     this->layer_profiler.accumulate("fc-forward");
 
     if (piranha_config["debug_all_forward"]) {
-        std::vector<double> vals(activations.size());
-        copyToHost(activations, vals);
+        std::vector<double> vals(activations->size());
+        copyToHost(*activations, vals);
 
         printf("fc,fw activation,min,%e,avg,%e,max,%e\n", 
                 *std::min_element(vals.begin(), vals.end()),
@@ -131,7 +137,7 @@ void FCLayer<T, Share>::forward(const Share<T> &input) {
 }
 
 template<typename T, template<typename, typename...> typename Share>
-void FCLayer<T, Share>::backward(const Share<T> &delta, const Share<T> &forwardInput) {
+void FCLayer<T, Share>::backward(const Share<T> &delta, const Share<T> &forwardInput, int micro_batch_idx) {
 
     if (piranha_config["debug_all_backward"]) {
         printf("layer %d\n", this->layerNum);
@@ -147,17 +153,27 @@ void FCLayer<T, Share>::backward(const Share<T> &delta, const Share<T> &forwardI
                 std::accumulate(vals.begin(), vals.end(), 0.0) / static_cast<float>(vals.size()), 
                 *std::max_element(vals.begin(), vals.end()));
     }
+
+    Share<T>* deltas; 
+    if(micro_batch_idx == -1) {
+        deltas = &_deltas;
+    } else {
+        CHECK_F(delta.size()  == MICRO_BATCH_SIZE * conf.inputDim, "the size of delta must be consistent with the mumber of elements per microbatch");
+        CHECK_F(forwardInput.size()  == MICRO_BATCH_SIZE * conf.inputDim, "the size of forwardInput must be consistent with the mumber of elements per microbatch");
+        deltas = new Share<T>(_deltas, micro_batch_idx * MICRO_BATCH_SIZE * conf.inputDim, (micro_batch_idx + 1) * MICRO_BATCH_SIZE * conf.inputDim); 
+    }
+
     
 	LOG_S(1) << "Executing FC.backward";
     this->layer_profiler.start();
     debug_profiler.start();
 
-    this->deltas.zero();
+    deltas->zero();
 
     // (1) Compute backwards gradient for previous layer
     // deltas = incomingDelta * W.T
-    matmul(delta, weights, this->deltas,
-            conf.batchSize, conf.inputDim, conf.outputDim, true, false, true, (T)FLOAT_PRECISION);
+    matmul(delta, weights, *deltas,
+            MICRO_BATCH_SIZE, conf.inputDim, conf.outputDim, true, false, true, (T)FLOAT_PRECISION);
 
     // (2) Compute gradients w.r.t. weights and update
 
@@ -174,7 +190,7 @@ void FCLayer<T, Share>::backward(const Share<T> &delta, const Share<T> &forwardI
     }
 
     matmul(delta, forwardInput, dW,
-            conf.outputDim, conf.inputDim, conf.batchSize, false, true, false,
+            conf.outputDim, conf.inputDim, MICRO_BATCH_SIZE, false, true, false,
             (T)(FLOAT_PRECISION + log_learning_rate));
 
     if (piranha_config["debug_all_backward"]) {
@@ -205,7 +221,7 @@ void FCLayer<T, Share>::backward(const Share<T> &delta, const Share<T> &forwardI
         gpu::reduceSum(
             delta.getShare(share),
             db.getShare(share),
-            false, conf.outputDim, conf.batchSize
+            false, conf.outputDim, MICRO_BATCH_SIZE
         ); 
     }
 

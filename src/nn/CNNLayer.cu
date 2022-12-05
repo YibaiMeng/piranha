@@ -23,12 +23,12 @@ template<typename T, template<typename, typename...> typename Share>
 CNNLayer<T, Share>::CNNLayer(CNNConfig* conf, int _layerNum, int seed) : Layer<T, Share>(_layerNum),
 	conf(conf->imageHeight, conf->imageWidth, conf->inputFeatures, 
 	 	conf->outputFeatures, conf->filterSize, conf->stride, 
-		conf->padding, conf->batchSize),
+		conf->padding, conf->batchSize, conf->microBatchSize),
  	weights(conf->filterSize * conf->filterSize * conf->inputFeatures * conf->outputFeatures),
- 	activations(conf->batchSize * conf->outputFeatures * 
+ 	_activations(conf->batchSize * conf->outputFeatures * 
 		(((conf->imageWidth - conf->filterSize + 2*conf->padding)/conf->stride) + 1) * 
  		(((conf->imageHeight - conf->filterSize + 2*conf->padding)/conf->stride) + 1)),
-    deltas(conf->batchSize * conf->imageHeight * conf->imageWidth * conf->inputFeatures) {
+    _deltas(conf->batchSize * conf->imageHeight * conf->imageWidth * conf->inputFeatures) {
 	initialize(_layerNum, seed);
 };
 
@@ -82,19 +82,29 @@ void CNNLayer<T, Share>::forward(const Share<T> &input, int micro_batch_idx) {
 
     if (piranha_config["debug_all_forward"]) {
         printf("layer %d\n", this->layerNum);
-        //printShareTensor(*const_cast<Share<T> *>(&input), "fw pass input (n=1)", 1, 1, 1, input.size() / conf.batchSize);
+        printShareTensor(*const_cast<Share<T> *>(&input), "fw pass input (n=1)", 1, 1, 1, input.size() / conf.batchSize);
     }
+    printf("micro batch size %i\n", MICRO_BATCH_SIZE);
 
 	LOG_S(1) << "Executing CNN.forward";
 
     this->layer_profiler.start();
     debug_profiler.start();
 
-    activations.zero();
+    // Get a "view" of the activation that is only relevant to the current micro batch.
+    Share<T>* activations; 
+    if(micro_batch_idx == -1) {
+        activations = &_activations;
+    } else {
+        CHECK_F(input.size()  == MICRO_BATCH_SIZE * conf.imageHeight * conf.imageWidth * conf.inputFeatures, "the size of input must be consistent with the number of elements per microbatch");
+        int activation_microbatch_size = _activations.size() / conf.batchSize * MICRO_BATCH_SIZE;
+        activations = new Share<T>(_activations, micro_batch_idx * activation_microbatch_size, (micro_batch_idx+1) * activation_microbatch_size); 
+    }
+    activations->zero();
 
-    convolution(input, weights, activations,
+    convolution(input, weights, *activations,
             cutlass::conv::Operator::kFprop,
-            conf.batchSize, conf.imageHeight, conf.imageWidth, conf.filterSize,
+            MICRO_BATCH_SIZE, conf.imageHeight, conf.imageWidth, conf.filterSize,
             conf.inputFeatures, conf.outputFeatures, conf.stride, conf.padding, FLOAT_PRECISION);
 
     debug_profiler.accumulate("cnn-fw-fprop");
@@ -104,8 +114,8 @@ void CNNLayer<T, Share>::forward(const Share<T> &input, int micro_batch_idx) {
 
     if (piranha_config["debug_all_forward"]) {
         //printShareTensor(*const_cast<Share<T> *>(&activations), "fw pass activations (n=1)", 1, 1, 1, activations.size() / conf.batchSize);
-        std::vector<double> vals(activations.size());
-        copyToHost(activations, vals);
+        std::vector<double> vals(activations->size());
+        copyToHost(*activations, vals);
         
         printf("cnn,fw activation,min,%e,avg,%e,max,%e\n", 
                 *std::min_element(vals.begin(), vals.end()),
@@ -136,11 +146,20 @@ void CNNLayer<T, Share>::backward(const Share<T> &delta, const Share<T> &forward
 
     debug_profiler.start();
 
-    this->deltas.zero();
+    Share<T>* deltas; 
+    if(micro_batch_idx == -1) {
+        deltas = &_deltas;
+    } else {
+        CHECK_F(delta.size() == _activations.size() / conf.batchSize * MICRO_BATCH_SIZE, "size of input delta is %i instead of %i", delta.size(), _activations.size() / conf.batchSize * MICRO_BATCH_SIZE);
+        CHECK_F(forwardInput.size()  == MICRO_BATCH_SIZE * conf.imageHeight * conf.imageWidth * conf.inputFeatures, "the size of forwardInput must be consistent with the mumber of elements per microbatch");
+        int size_per_micro_batch = conf.imageHeight * conf.imageWidth * conf.inputFeatures * MICRO_BATCH_SIZE;
+        deltas = new Share<T>(_deltas, micro_batch_idx * size_per_micro_batch, (micro_batch_idx + 1) * size_per_micro_batch); 
+    }
+    deltas->zero();
 
-    convolution(delta, weights, this->deltas,
+    convolution(delta, weights, *deltas,
             cutlass::conv::Operator::kDgrad,
-            conf.batchSize, conf.imageHeight, conf.imageWidth, conf.filterSize,
+            MICRO_BATCH_SIZE, conf.imageHeight, conf.imageWidth, conf.filterSize,
             conf.inputFeatures, conf.outputFeatures, conf.stride, conf.padding, FLOAT_PRECISION);
 
     debug_profiler.accumulate("cnn-bw-dgrad");
@@ -172,7 +191,7 @@ void CNNLayer<T, Share>::backward(const Share<T> &delta, const Share<T> &forward
 
     convolution(delta, forwardInput, dF,
             cutlass::conv::Operator::kWgrad,
-            conf.batchSize, conf.imageHeight, conf.imageWidth, conf.filterSize,
+            MICRO_BATCH_SIZE, conf.imageHeight, conf.imageWidth, conf.filterSize,
             conf.inputFeatures, conf.outputFeatures, conf.stride, conf.padding, FLOAT_PRECISION);
 
     if (piranha_config["debug_all_backward"]) {

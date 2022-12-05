@@ -22,6 +22,8 @@
 #include "../util/functors.h"
 #include "../util/Profiler.h"
 
+#include <loguru.hpp>
+
 extern Precompute PrecomputeObject;
 extern Profiler comm_profiler;
 extern Profiler func_profiler;
@@ -510,6 +512,18 @@ int FPCBase<T, I>::numShares() {
     return 3;
 }
 
+template<typename T>
+FPC<T, BufferIterator<T>>::FPC(FPC & i, int start_idx, int end_idx) : FPC<T, BufferIterator<T>>(nullptr, nullptr, nullptr) {
+    CHECK_F(start_idx < end_idx, "Start index must be smaller than end index");
+    CHECK_F(end_idx <= i.size(), "End index must be within the size of input i");
+    CHECK_F(start_idx >= 0);
+    // Must set cudaDeviceID, as this is how the DeviceData stores the device id; 
+    CUDA_CHECK(cudaSetDevice(i.cudaDeviceID()));
+    this->shareA = new DeviceData<T>(i.getShare(0)->begin() + start_idx, i.getShare(0)->begin() + end_idx);
+    this->shareB = new DeviceData<T>(i.getShare(1)->begin() + start_idx, i.getShare(1)->begin() + end_idx);
+    this->shareC = new DeviceData<T>(i.getShare(2)->begin() + start_idx, i.getShare(2)->begin() + end_idx);
+}
+
 template<typename T, typename I>
 FPC<T, I>::FPC(DeviceData<T, I> *a, DeviceData<T, I> *b, DeviceData<T, I> *c) : FPCBase<T, I>(a, b, c) {}
 
@@ -569,6 +583,22 @@ void FPC<T, BufferIterator<T> >::resize(size_t n) {
     _shareA.resize(n);
     _shareB.resize(n); 
     _shareC.resize(n); 
+}
+
+template<typename T>
+void FPC<T, BufferIterator<T> >::copySync( FPC<T, BufferIterator<T> >& dst) {    
+    this->shareA->copyToDevice(*dst.shareA);
+    this->shareB->copyToDevice(*dst.shareB);
+    this->shareC->copyToDevice(*dst.shareC);
+}
+
+template<typename T>
+void FPC<T, BufferIterator<T> >::copyAsync(FPC<T, BufferIterator<T> >& dst, cudaStream_t stream) {    
+    LOG_S(1) << "Asynchronous copying data from a share on device " << this->cudaDeviceID()  << " to " << dst.cudaDeviceID();
+    // Evaluate whether we should have more streams, .
+    this->shareA->copyAsync(*dst.shareA, stream);
+    this->shareB->copyAsync(*dst.shareB, stream);
+    this->shareC->copyAsync(*dst.shareC, stream);
 }
 
 // Functionalities

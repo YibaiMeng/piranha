@@ -6,6 +6,9 @@
 #include <assert.h>
 #include <limits.h>
 #include <array>
+// Show more helpful messages when there's a JSON
+// https://json.nlohmann.me/api/macros/json_diagnostics/#extended-diagnostic-messages
+#define JSON_DIAGNOSTICS 1
 #include <json.hpp>
 
 // AES globals
@@ -28,6 +31,15 @@
 extern int MINI_BATCH_SIZE;
 extern int LOG_MINI_BATCH;
 
+// Size of the microbatch if pipelining is enabled.
+// Must be evenly divided by MINI BATCH size.
+extern int MICRO_BATCH_SIZE;
+extern int LOG_MICRO_BATCH;
+
+// If model parallel is enabled, the number of pipeline group.
+// I.e., the layers are split to GPUs among the PIPELINE_GROUPS.
+// This variable is ignored when model parallel is not enabled.
+extern int PIPELINE_GROUPS;
+
 // learning rate = 2^(-LOG_LEARNING_RATE)
 extern int log_learning_rate;
-

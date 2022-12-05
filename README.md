@@ -30,12 +30,16 @@ git submodule update --init --recursive
 
 ```
 cd ext/cutlass
-mkdir build
+mkdir build && cd build
 cmake .. -DCUTLASS_NVCC_ARCHS=<YOUR_GPU_ARCH_HERE> -DCMAKE_CUDA_COMPILER_WORKS=1 -DCMAKE_CUDA_COMPILER=<YOUR NVCC PATH HERE>
 make -j
 ```
+For `freddie`, the GPU_ARCH is 62, and NVCC path is `/usr/local/cuda-11/bin/nvcc`
+
 
 1. Install GTest. We use it for unit testing.
+
+We use conda to install it
 
 ```
 sudo apt install libgtest-dev libssl-dev
@@ -57,7 +61,7 @@ mkdir output; mkdir files/MNIST; mkdir files/CIFAR10
 
 ```
 cd scripts
-sudo pip install torch torchvision
+conda install pytorch torchvision pytorch-cuda=11.6 -c pytorch -c nvidia
 python download_{mnist, cifar10}.py
 ```
 

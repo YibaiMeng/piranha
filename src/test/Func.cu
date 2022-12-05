@@ -8,7 +8,8 @@ struct FuncTest : public testing::Test {
     using ParamType = T;
 };
 
-using Types = testing::Types<RSS<uint64_t>, TPC<uint64_t>, FPC<uint64_t>, OPC<uint64_t> >;
+//using Types = testing::Types<RSS<uint64_t>, TPC<uint64_t>, FPC<uint64_t>, OPC<uint64_t> >;
+using Types = testing::Types<OPC<uint64_t> >;
 TYPED_TEST_CASE(FuncTest, Types);
 
 TYPED_TEST(FuncTest, Reconstruct) {

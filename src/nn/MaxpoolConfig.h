@@ -14,13 +14,14 @@ public:
 	size_t batchSize = 0;
     size_t microBatchSize = 0;
 	MaxpoolConfig(size_t _imageHeight, size_t _imageWidth, size_t _features, 
-				  size_t _poolSize, size_t _stride, size_t _batchSize) : LayerConfig("Maxpool"),
+				  size_t _poolSize, size_t _stride, size_t _batchSize, size_t _microBatchSize=0) : LayerConfig("Maxpool"),
 		imageHeight(_imageHeight),
 	 	imageWidth(_imageWidth),
 	 	features(_features),
 	 	poolSize(_poolSize),
 	 	stride(_stride),
-	 	batchSize(_batchSize) {
+	 	batchSize(_batchSize),
+		microBatchSize(_microBatchSize) {
 		assert((imageWidth - poolSize)%stride == 0 && "Maxpool layer parameters incorrect");
 		assert((imageHeight - poolSize)%stride == 0 && "Maxpool layer parameters incorrect");
 	};

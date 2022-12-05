@@ -17,8 +17,8 @@ class CNNLayer : public Layer<T, Share> {
 
         Share<T> weights;
 
-        Share<T> activations;
-        Share<T> deltas;
+        Share<T> _activations;
+        Share<T> _deltas;
 
     public:
         //Constructor and initializer
@@ -33,9 +33,9 @@ class CNNLayer : public Layer<T, Share> {
         void backward(const Share<T> &delta, const Share<T> &forwardInput, int micro_batch_idx=-1) override;
 
         //Getters
-        Share<T> *getActivation() {return &activations;};
+        Share<T> *getActivation() {return &_activations;};
         Share<T> *getWeights() {return &weights;};
         Share<T> *getBiases() {return nullptr;};
-        Share<T> *getDelta() {return &deltas;};
+        Share<T> *getDelta() {return &_deltas;};
 };
 

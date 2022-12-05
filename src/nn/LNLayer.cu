@@ -14,7 +14,7 @@ extern nlohmann::json piranha_config;
 
 template<typename T, template<typename, typename...> typename Share>
 LNLayer<T, Share>::LNLayer(LNConfig* conf, int _layerNum, int seed) : Layer<T, Share>(_layerNum),
-        conf(conf->inputSize, conf->numBatches),
+        conf(conf->inputSize, conf->numBatches, conf->microBatchSize),
         gamma(conf->inputSize),
         beta(conf->inputSize),
         xhat(conf->numBatches * conf->inputSize),
