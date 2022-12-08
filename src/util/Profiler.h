@@ -18,11 +18,11 @@ public:
     double get_elapsed_all();
     void dump_all();
 
-    void track_alloc(size_t bytes);
-    void track_free(size_t bytes);
+    void track_alloc(size_t bytes, int gpu_id);
+    void track_free(size_t bytes, int gpu_id);
     void tag_mem();
     void dump_mem_tags();
-    double get_max_mem_mb();
+    std::vector<double> get_max_mem_mb();
     
     void add_comm_round();
     void dump_comm_rounds();
@@ -40,9 +40,9 @@ private:
     std::map<std::string, double> accumulators;
     double total;
 
-    double mem_mb;
+    double mem_mb[10];
     std::vector<std::pair<double, double> > tags;
-    double max_mem_mb;
+    double max_mem_mb[10];
 
     size_t rounds;
 

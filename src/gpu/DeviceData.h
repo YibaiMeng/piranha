@@ -277,13 +277,13 @@ class DeviceData<T, BufferIterator<T> > : public DeviceDataBase<T, BufferIterato
 
         ~DeviceData() {
             LOG_S(2) << "Device Data of size " << this->size() * sizeof(T) << " freed on GPU "  << this->cudaDeviceID();
-            memory_profiler.track_free(data.size() * sizeof(T));
+            memory_profiler.track_free(data.size() * sizeof(T), this->cuda_device_id);
         }
 
         DeviceData(int n) : data(n) {
             LOG_S(2) << "Device Data of size " << n * sizeof(T) << " initialized on GPU "  << this->cudaDeviceID();
             this->set(data.begin(), data.end());
-            memory_profiler.track_alloc(n * sizeof(T));
+            memory_profiler.track_alloc(n * sizeof(T), this->cuda_device_id);
         }
 
         DeviceData(std::initializer_list<T> il) : data(il.size()) {
@@ -292,14 +292,14 @@ class DeviceData<T, BufferIterator<T> > : public DeviceDataBase<T, BufferIterato
             LOG_S(2) << "Device Data of size " << data.size() * sizeof(T) << " initialized on GPU "  << this->cudaDeviceID();
             this->set(data.begin(), data.end());
 
-            memory_profiler.track_alloc(il.size() * sizeof(T));
+            memory_profiler.track_alloc(il.size() * sizeof(T), this->cuda_device_id);
         }
 
         void resize(size_t n) {
             CUDA_CHECK(cudaSetDevice(this->cuda_device_id));
-            memory_profiler.track_free(data.size() * sizeof(T));
+            memory_profiler.track_free(data.size() * sizeof(T), this->cuda_device_id);
             data.resize(n);
-            memory_profiler.track_alloc(n * sizeof(T));
+            memory_profiler.track_alloc(n * sizeof(T), this->cuda_device_id);
             this->set(data.begin(), data.end());
         }
 
@@ -319,7 +319,7 @@ class DeviceData<T, BufferIterator<T> > : public DeviceDataBase<T, BufferIterato
             // first, assert the dest_buffer have enough space.
             T* dst_ptr = thrust::raw_pointer_cast(dst_buffer.data.data());
             T* src_ptr = thrust::raw_pointer_cast(data.data());
-            memory_profiler.add_intergpu_comm_bytes(sizeof(T) * this->size(), this->cudaDeviceID(), dst_buffer.cudaDeviceID());
+            comm_profiler.add_intergpu_comm_bytes(sizeof(T) * this->size(), this->cudaDeviceID(), dst_buffer.cudaDeviceID());
             CUDA_CHECK(cudaMemcpyPeer((void*)dst_ptr, dst_buffer.cudaDeviceID(), (void*)src_ptr, this->cudaDeviceID(), sizeof(T) * this->size()));
             return -1;
         }        

@@ -97,6 +97,8 @@ cudaError_t CutlassConvFprop(
         const cutlass::TensorRef<T, cutlass::layout::TensorNHWC> &B, 
         cutlass::TensorRef<T, cutlass::layout::TensorNHWC> &C, 
         FpropOptions<T> const &options) {
+    int cuda_device_id;
+    CUDA_CHECK(cudaGetDevice(&cuda_device_id));
 
     cutlass::conv::Mode mode = cutlass::conv::Mode::kCrossCorrelation;
 
@@ -122,7 +124,7 @@ cudaError_t CutlassConvFprop(
     size_t workspace_size = implicit_gemm_op.get_workspace_size(arguments);
     cutlass::device_memory::allocation<uint8_t> workspace(workspace_size);
 
-    memory_profiler.track_alloc(workspace_size);
+    memory_profiler.track_alloc(workspace_size, cuda_device_id);
 
     auto status = implicit_gemm_op.can_implement(arguments);
     CUTLASS_CHECK(status);
@@ -133,7 +135,7 @@ cudaError_t CutlassConvFprop(
     status = implicit_gemm_op();
     CUTLASS_CHECK(status);
 
-    memory_profiler.track_free(workspace_size);
+    memory_profiler.track_free(workspace_size, cuda_device_id);
 
     return status == cutlass::Status::kSuccess ? cudaSuccess : cudaErrorUnknown;
 }
@@ -203,6 +205,8 @@ cudaError_t CutlassConvDgrad(
         const cutlass::TensorRef<T, cutlass::layout::TensorNHWC> &B, 
         cutlass::TensorRef<T, cutlass::layout::TensorNHWC> &C, 
         DgradOptions<T> const &options) {
+    int cuda_device_id;
+    CUDA_CHECK(cudaGetDevice(&cuda_device_id));
 
     cutlass::conv::Mode mode = cutlass::conv::Mode::kCrossCorrelation;
 
@@ -228,7 +232,7 @@ cudaError_t CutlassConvDgrad(
     size_t workspace_size = implicit_gemm_op.get_workspace_size(arguments);
     cutlass::device_memory::allocation<uint8_t> workspace(workspace_size);
 
-    memory_profiler.track_alloc(workspace_size);
+    memory_profiler.track_alloc(workspace_size, cuda_device_id);
 
     auto status = implicit_gemm_op.can_implement(arguments);
     CUTLASS_CHECK(status);
@@ -239,7 +243,7 @@ cudaError_t CutlassConvDgrad(
     status = implicit_gemm_op();
     CUTLASS_CHECK(status);
 
-    memory_profiler.track_free(workspace_size);
+    memory_profiler.track_free(workspace_size, cuda_device_id);
 
     return status == cutlass::Status::kSuccess ? cudaSuccess : cudaErrorUnknown;
 }
@@ -309,7 +313,8 @@ cudaError_t CutlassConvWgrad(
         const cutlass::TensorRef<T, cutlass::layout::TensorNHWC> &B, 
         cutlass::TensorRef<T, cutlass::layout::TensorNHWC> &C, 
         WgradOptions<T> const &options) {
-
+    int cuda_device_id;
+    CUDA_CHECK(cudaGetDevice(&cuda_device_id));
     cutlass::conv::Mode mode = cutlass::conv::Mode::kCrossCorrelation;
 
     cutlass::conv::Conv2dProblemSize problem_size(
@@ -334,7 +339,7 @@ cudaError_t CutlassConvWgrad(
     size_t workspace_size = implicit_gemm_op.get_workspace_size(arguments);
     cutlass::device_memory::allocation<uint8_t> workspace(workspace_size);
 
-    memory_profiler.track_alloc(workspace_size);
+    memory_profiler.track_alloc(workspace_size, cuda_device_id);
 
     auto status = implicit_gemm_op.can_implement(arguments);
     CUTLASS_CHECK(status);
@@ -345,7 +350,7 @@ cudaError_t CutlassConvWgrad(
     status = implicit_gemm_op();
     CUTLASS_CHECK(status);
 
-    memory_profiler.track_free(workspace_size);
+    memory_profiler.track_free(workspace_size, cuda_device_id);
 
     return status == cutlass::Status::kSuccess ? cudaSuccess : cudaErrorUnknown;
 }

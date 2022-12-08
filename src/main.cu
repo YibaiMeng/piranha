@@ -334,7 +334,9 @@ void train(NeuralNetwork<T, Share> *net, NeuralNetConfig *config, std::string ru
             }
 
             if (piranha_config["eval_fw_peak_memory"]) {
-                LOG_F(0, "fw pass peak memory (MB), %f\n", memory_profiler.get_max_mem_mb());
+                std::stringstream st;
+                for(double i : memory_profiler.get_max_mem_mb()) st << i << " ";
+                LOG_F(0, "fw pass peak memory (MB), %s\n", st.str().c_str());
             }
 
             total_comm_tx_mb += ((double)comm_profiler.get_comm_tx_bytes()) / 1024.0 / 1024.0;
@@ -360,7 +362,9 @@ void train(NeuralNetwork<T, Share> *net, NeuralNetConfig *config, std::string ru
             }
 
             if (piranha_config["eval_bw_peak_memory"]) {
-                LOG_F(0, "total fw-bw pass peak memory (MB), %f\n", memory_profiler.get_max_mem_mb());
+                std::stringstream st;
+                for(double i : memory_profiler.get_max_mem_mb()) st << i << " ";
+                LOG_F(0, "total fw-bw pass peak memory (MB), %s\n", st.str().c_str());
             }
 
             total_time_s += toplevel_profiler.get_elapsed_all() / 1000.0;
