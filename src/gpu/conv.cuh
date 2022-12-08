@@ -373,7 +373,6 @@ void conv_fprop(
             stride, dilation, (T)1, (T)0);
 
     CutlassConvFprop<T>(A, B, C, options);
-    cudaThreadSynchronize();
 }
 
 template<typename T>
@@ -419,7 +418,6 @@ void conv_dgrad(
             stride, dilation, (T)1, (T)0);
 
     CutlassConvDgrad<T>(A, B, C, options);
-    cudaThreadSynchronize();
 }
 
 template<typename T>
@@ -464,7 +462,6 @@ void conv_wgrad(
             stride, dilation, (T)1, (T)0);
 
     CutlassConvWgrad<T>(A, B, C, options);
-    cudaThreadSynchronize();
 }
 
 template<typename T>

@@ -195,7 +195,6 @@ void matrixMultiplication(
         transpose_a, transpose_b, a_rows, a_cols, b_rows, b_cols
     );
 
-    cudaThreadSynchronize();
 }
 
 template<typename T, typename I>
@@ -221,7 +220,6 @@ void transpose(DeviceData<T, I> *a, DeviceData<T, I> *b,
         rows, cols
     );
 
-    cudaThreadSynchronize();
 }
 
 template<typename T, typename I>
@@ -247,7 +245,6 @@ void flip180(DeviceData<T, I> *a, DeviceData<T, I> *b,
         rows, cols
     );
 
-    cudaThreadSynchronize();
 }
 
 template<typename T, typename I>
@@ -273,7 +270,6 @@ void elementVectorAdd(DeviceData<T, I> *a, const DeviceData<T, I> *b,
         rowwise, rows, cols
     );
 
-    cudaThreadSynchronize();
 }
 
 template<typename T, typename I>
@@ -299,7 +295,6 @@ void batchElementVectorAdd(DeviceData<T, I> *a, const DeviceData<T, I> *b,
         rowwise, batchSize, rows, cols
     );
 
-    cudaThreadSynchronize();
 }
 
 template<typename T, typename I>
@@ -325,7 +320,6 @@ void elementVectorSubtract(DeviceData<T, I> *a, const DeviceData<T, I> *b,
         rowwise, rows, cols
     );
 
-    cudaThreadSynchronize();
 }
 
 template<typename T, typename I>
@@ -348,7 +342,6 @@ void reduceSum(const DeviceData<T, I> *a, DeviceData<T, I> *b,
         reduceRows, rows, cols
     );
 
-    cudaThreadSynchronize();
 }
 
 template<typename T, typename I>
@@ -376,7 +369,6 @@ void vectorExpand(const DeviceData<T, I> *a, DeviceData<T, I> *b, size_t expansi
         a->size(), expansion_factor
     );
 
-    cudaThreadSynchronize();
 }
 
 template<typename T, typename I>
@@ -396,7 +388,6 @@ void truncate_cols(DeviceData<T, I> *a, DeviceData<T, I> *b, size_t rows, size_t
         a->size() / start_cols, start_cols, end_cols
     );
 
-    cudaThreadSynchronize();
 }
 
 }

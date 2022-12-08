@@ -120,7 +120,6 @@ void bitexpand(DeviceData<T, I> *a, DeviceData<U, I2> *b) {
         thrust::raw_pointer_cast(&b->begin()[0])
     );
 
-    cudaThreadSynchronize();
 }
 
 template<typename U>
@@ -149,7 +148,6 @@ void getMSBs(DeviceData<U> &bits, DeviceData<U> &msbs, size_t bitWidth) {
         bitWidth
     );
 
-    cudaThreadSynchronize();
 }
 
 template<typename U>
@@ -178,7 +176,6 @@ void setMSBs(DeviceData<U> &bits, U val, size_t bitWidth) {
         bitWidth
     );
 
-    cudaThreadSynchronize();
 }
 
 template<typename T>
@@ -209,7 +206,6 @@ void setCarryOutMSB(DeviceData<T> &rbits, DeviceData<T> &abits, DeviceData<T> &m
         xor_msb
     );
 
-    cudaThreadSynchronize();
 }
 
 template<typename T>
@@ -242,7 +238,6 @@ void expandCompare(DeviceData<T> &b, DeviceData<T> &inverseB, DeviceData<T> &exp
         expansionFactor
     );
 
-    cudaThreadSynchronize();
 }
 
 }

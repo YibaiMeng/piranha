@@ -96,7 +96,6 @@ void gemm(int M, int N, int K,
             }
         }
     }
-    cudaThreadSynchronize();
 }
 
 template<typename T>

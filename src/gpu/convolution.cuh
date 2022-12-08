@@ -246,7 +246,6 @@ void im2row(const DeviceData<T> *im, DeviceData<T> *output,
         imageWidth, imageHeight, filterSize, Din, stride, padding
     );
 
-    cudaThreadSynchronize();
 }
 
 template<typename T, typename U>
@@ -300,7 +299,6 @@ void maxpool_im2row(const DeviceData<T> *im, DeviceData<T> *output,
         );
     }
 
-    cudaThreadSynchronize();
 }
 
 template<typename T, typename U>
@@ -333,7 +331,6 @@ void stride_pad(const DeviceData<T> *input, DeviceData<T> *output,
         pad_val
     );
 
-    cudaThreadSynchronize();
 }
 
 template<typename T>
@@ -370,7 +367,6 @@ void averagepool_im2row(const DeviceData<T> *im, DeviceData<T> *output,
         imageHeight, imageWidth, filterSize, Din, batchSize, stride, padding
     );
 
-    cudaThreadSynchronize();
 }
 
 template<typename T, typename I>
@@ -406,7 +402,6 @@ void maxpool_row2im(DeviceData<T, I> *rows, DeviceData<T, I> *output,
         imageHeight, imageWidth, filterSize, Din, batchSize, stride
     );
 
-    cudaThreadSynchronize();
 }
 
 template<typename T, typename I>
@@ -436,7 +431,6 @@ void averagepool_expand_delta(const DeviceData<T, I> *input_delta, DeviceData<T,
         input_delta->size(), Din, poolSize
     );
 
-    cudaThreadSynchronize();
 }
 
 template<typename T, typename I>
@@ -467,7 +461,6 @@ void expandFilter(DeviceData<T, I> &filter, DeviceData<T, I> &out,
         rows, cols, stride
     );
 
-    cudaThreadSynchronize();
 }
 
 }
