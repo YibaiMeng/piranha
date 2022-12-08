@@ -1,11 +1,11 @@
 
 #pragma once
 
-#include "ResLayerConfig.h"
-#include "Layer.h"
-#include "../util/util.cuh"
-#include "../util/connect.h"
-#include "../globals.h"
+#include "nn/ResLayerConfig.h"
+#include "nn/Layer.h"
+#include "util/util.cuh"
+#include "util/connect.h"
+#include "globals.h"
 
 extern int partyNum;
 

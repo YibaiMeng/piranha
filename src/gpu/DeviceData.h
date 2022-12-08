@@ -38,10 +38,10 @@ auto evenView = getEvens(actual_data);
 #include <thrust/functional.h>
 #include <thrust/transform.h>
 
-#include "../util/connect.h"
-#include "../util/Profiler.h"
-#include "functors.cuh"
-#include "gpu.h"
+#include "util/connect.h"
+#include "util/Profiler.h"
+#include "gpu/functors.cuh"
+#include "gpu/gpu.h"
 
 #include <loguru.hpp>
 

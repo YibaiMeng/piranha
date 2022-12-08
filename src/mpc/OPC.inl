@@ -9,18 +9,20 @@
 #include <thrust/for_each.h>
 #include <thrust/iterator/zip_iterator.h>
 
-#include "../gpu/bitwise.cuh"
-#include "../gpu/convolution.cuh"
-#include "../gpu/conv.cuh"
-#include "../gpu/DeviceData.h"
-#include "../gpu/functors.cuh"
-#include "../gpu/matrix.cuh"
-#include "../gpu/gemm.cuh"
-#include "../gpu/StridedRange.cuh"
-#include "../globals.h"
-#include "Precompute.h"
-#include "../util/functors.h"
-#include "../util/Profiler.h"
+#include "gpu/bitwise.cuh"
+#include "gpu/convolution.cuh"
+#include "gpu/conv.cuh"
+#include "gpu/DeviceData.h"
+#include "gpu/functors.cuh"
+#include "gpu/matrix.cuh"
+#include "gpu/gemm.cuh"
+#include "gpu/StridedRange.cuh"
+#include "globals.h"
+#include "mpc/Precompute.h"
+#include "util/functors.h"
+#include "util/Profiler.h"
+#include "util/util.cuh"
+
 
 extern Precompute PrecomputeObject;
 extern Profiler func_profiler;

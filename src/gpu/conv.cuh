@@ -15,9 +15,9 @@
 #include <stdlib.h>
 #include <thrust/device_vector.h>
 
-#include "DeviceData.h"
-#include "../globals.h"
-#include "../util/util.cuh"
+#include "gpu/DeviceData.h"
+#include "globals.h"
+#include "util/util.cuh"
 
 extern Profiler memory_profiler;
 

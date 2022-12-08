@@ -5,12 +5,12 @@
 #include <math.h>
 #include <numeric>
 
-#include "../gpu/matrix.cuh"
+#include "gpu/matrix.cuh"
 
-#include "../mpc/RSS.h"
-#include "../mpc/TPC.h"
-#include "../mpc/FPC.h"
-#include "../mpc/OPC.h"
+#include "mpc/RSS.h"
+#include "mpc/TPC.h"
+#include "mpc/FPC.h"
+#include "mpc/OPC.h"
 
 #include <loguru.hpp>
 Profiler matmul_profiler;

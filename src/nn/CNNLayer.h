@@ -1,11 +1,11 @@
 
 #pragma once
 
-#include "CNNConfig.h"
-#include "Layer.h"
-#include "../util/util.cuh"
-#include "../util/connect.h"
-#include "../globals.h"
+#include "nn/CNNConfig.h"
+#include "nn/Layer.h"
+#include "util/util.cuh"
+#include "util/connect.h"
+#include "globals.h"
 
 extern int partyNum;
 

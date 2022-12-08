@@ -4,8 +4,8 @@
 #include <limits>
 #include <thrust/device_vector.h>
 
-#include "DeviceData.h"
-#include "../util/util.cuh"
+#include "gpu/DeviceData.h"
+#include "util/util.cuh"
 
 namespace kernel {
 

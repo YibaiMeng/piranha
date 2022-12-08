@@ -1,7 +1,7 @@
 
 #pragma once
 
-#include "../globals.h"
+#include "globals.h"
 
 class LayerConfig
 {

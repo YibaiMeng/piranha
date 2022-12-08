@@ -16,7 +16,7 @@
 #include <sys/ioctl.h>
 #include <unistd.h>
 
-#include "../globals.h"
+#include "globals.h"
 
 #ifndef BMRNET_H_
 #define BMRNET_H_

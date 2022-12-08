@@ -1,8 +1,8 @@
 
 #pragma once
 
-#include "../gpu/DeviceData.h"
-#include "../globals.h"
+#include "gpu/DeviceData.h"
+#include "globals.h"
 
 class Precompute
 {

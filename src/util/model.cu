@@ -1,17 +1,17 @@
 
-#include "model.h"
+#include "util/model.h"
 
 #include <fstream>
 #include <iostream>
 
-#include "../globals.h"
-#include "../nn/FCConfig.h"
-#include "../nn/ReLUConfig.h"
-#include "../nn/CNNConfig.h"
-#include "../nn/MaxpoolConfig.h"
-#include "../nn/LNConfig.h"
-#include "../nn/AveragepoolConfig.h"
-#include "../nn/ResLayerConfig.h"
+#include "globals.h"
+#include "nn/FCConfig.h"
+#include "nn/ReLUConfig.h"
+#include "nn/CNNConfig.h"
+#include "nn/MaxpoolConfig.h"
+#include "nn/LNConfig.h"
+#include "nn/AveragepoolConfig.h"
+#include "nn/ResLayerConfig.h"
 #include <json.hpp>
 #include <loguru.hpp>
 

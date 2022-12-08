@@ -10,8 +10,8 @@
 #include <stdint.h>
 #include <vector>
 
-#include "basicSockets.h"
-#include "../globals.h"
+#include "util/basicSockets.h"
+#include "globals.h"
 
 #include <loguru.hpp>
 

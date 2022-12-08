@@ -7,7 +7,7 @@
 #include <openssl/evp.h>
 #include <openssl/err.h>
 
-#include "../globals.h"
+#include "globals.h"
 
 #define BLOCK_BYTES 16
 

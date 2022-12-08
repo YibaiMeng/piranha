@@ -1,7 +1,7 @@
 
 #pragma once
 
-#include "../globals.h"
+#include "globals.h"
 
 template<typename T>
 struct filter_positive_powers {

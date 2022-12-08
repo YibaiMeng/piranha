@@ -1,12 +1,12 @@
 
 #pragma once
 
-#include "ReLULayer.h"
-#include "../mpc/RSS.h"
-#include "../mpc/TPC.h"
-#include "../mpc/FPC.h"
-#include "../mpc/OPC.h"
-#include "../util/Profiler.h"
+#include "nn/ReLULayer.h"
+#include "mpc/RSS.h"
+#include "mpc/TPC.h"
+#include "mpc/FPC.h"
+#include "mpc/OPC.h"
+#include "util/Profiler.h"
 
 #include <numeric>
 

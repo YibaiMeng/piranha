@@ -1,15 +1,15 @@
 
 #pragma once
 
-#include "LayerConfig.h"
-#include "FCConfig.h"
-#include "CNNConfig.h"
-#include "MaxpoolConfig.h"
-#include "AveragepoolConfig.h"
-#include "ReLUConfig.h"
-#include "LNConfig.h"
-#include "ResLayerConfig.h"
-#include "../globals.h"
+#include "nn/LayerConfig.h"
+#include "nn/FCConfig.h"
+#include "nn/CNNConfig.h"
+#include "nn/MaxpoolConfig.h"
+#include "nn/AveragepoolConfig.h"
+#include "nn/ReLUConfig.h"
+#include "nn/LNConfig.h"
+#include "nn/ResLayerConfig.h"
+#include "globals.h"
 
 extern size_t INPUT_SIZE;
 extern size_t NUM_CLASSES;

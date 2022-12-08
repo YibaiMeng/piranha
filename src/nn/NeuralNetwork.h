@@ -1,9 +1,13 @@
 
 #pragma once
+#include <map>
+#include <tuple>
+#include <condition_variable>
+#include <thread>
 
-#include "NeuralNetConfig.h"
-#include "Layer.h"
-#include "../globals.h"
+#include "nn/NeuralNetConfig.h"
+#include "nn/Layer.h"
+#include "globals.h"
 
 template<typename T, template<typename, typename...> typename Share>
 class NeuralNetwork {

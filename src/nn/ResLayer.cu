@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ResLayer.h"
+#include "nn/ResLayer.h"
 
 #include <math.h>
 #include <random>

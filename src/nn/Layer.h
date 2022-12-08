@@ -1,9 +1,9 @@
 
 #pragma once
 
-#include "../globals.h"
-#include "../util/Profiler.h"
-#include "../mpc/RSS.h"
+#include "globals.h"
+#include "util/Profiler.h"
+#include "mpc/RSS.h"
 
 #include <numeric>
 

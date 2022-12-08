@@ -1,10 +1,10 @@
 
-#include "AveragepoolLayer.h"
+#include "nn/AveragepoolLayer.h"
 
-#include "../mpc/RSS.h"
-#include "../mpc/TPC.h"
-#include "../mpc/FPC.h"
-#include "../mpc/OPC.h"
+#include "mpc/RSS.h"
+#include "mpc/TPC.h"
+#include "mpc/FPC.h"
+#include "mpc/OPC.h"
 
 #include <numeric>
 

@@ -3,7 +3,7 @@
 
 #include <thrust/device_vector.h>
 
-#include "DeviceData.h"
+#include "gpu/DeviceData.h"
 
 namespace kernel {
 

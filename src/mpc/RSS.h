@@ -9,8 +9,8 @@
 
 #include <cutlass/conv/convolution.h>
 
-#include "../gpu/DeviceData.h"
-#include "../globals.h"
+#include "gpu/DeviceData.h"
+#include "globals.h"
 
 template <typename T, typename I>
 class RSSBase {

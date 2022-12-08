@@ -1,11 +1,11 @@
 
 #pragma once
 
-#include "AveragepoolConfig.h"
-#include "Layer.h"
-#include "../util/util.cuh"
-#include "../util/connect.h"
-#include "../globals.h"
+#include "nn/AveragepoolConfig.h"
+#include "nn/Layer.h"
+#include "util/util.cuh"
+#include "util/connect.h"
+#include "globals.h"
 
 template<typename T, template<typename, typename...> typename Share>
 class AveragepoolLayer : public Layer<T, Share> {

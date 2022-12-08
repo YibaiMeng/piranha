@@ -1,7 +1,7 @@
 
 #pragma once
 
-#include "Precompute.h"
+#include "mpc/Precompute.h"
 
 Precompute::Precompute(){
     initialize();

@@ -1,11 +1,11 @@
 
 #pragma once
 
-#include "MaxpoolConfig.h"
-#include "Layer.h"
-#include "../util/util.cuh"
-#include "../util/connect.h"
-#include "../globals.h"
+#include "nn/MaxpoolConfig.h"
+#include "nn/Layer.h"
+#include "util/util.cuh"
+#include "util/connect.h"
+#include "globals.h"
 
 template<typename T, template<typename, typename...> typename Share>
 class MaxpoolLayer : public Layer<T, Share> {

@@ -1,10 +1,10 @@
 #pragma once
 
-#include "LNLayer.h"
-#include "../mpc/RSS.h"
-#include "../mpc/TPC.h"
-#include "../mpc/FPC.h"
-#include "../mpc/OPC.h"
+#include "nn/LNLayer.h"
+#include "mpc/RSS.h"
+#include "mpc/TPC.h"
+#include "mpc/FPC.h"
+#include "mpc/OPC.h"
 
 #include <math.h>
 #include <numeric>

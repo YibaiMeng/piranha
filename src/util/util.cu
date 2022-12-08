@@ -1,5 +1,5 @@
 
-#include "util.cuh"
+#include "util/util.cuh"
 
 #include <iostream>
 

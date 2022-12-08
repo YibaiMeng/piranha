@@ -6,7 +6,7 @@
 #include <iostream>
 #include <fstream>
 
-#include "AESObject.h"
+#include "mpc/AESObject.h"
 
 AESObject::AESObject(char* filename) {
 

@@ -22,7 +22,7 @@ DEBUG_OBJ_FILES   += $(addprefix $(DEBUG_DIR)/, $(notdir $(SRC_CU_FILES:.cu=.o))
 HEADER_FILES      := $(wildcard src/*.h src/**/*.h src/*.cuh src/**/*.cuh src/*.inl src/**/*.inl)
 
 LIBS := -lcrypto -lssl -lcudart -lcuda -lgtest -lcublas
-OBJ_INCLUDES := -I '/usr/local/cuda-$(CUDA_VERSION)/include' -I '$(CUTLASS_PATH)/include' -I '$(CUTLASS_PATH)/tools/util/include' -I 'include' -I '$(LOGURU_PATH)' 
+OBJ_INCLUDES := -I 'src' -I '/usr/local/cuda-$(CUDA_VERSION)/include' -I '$(CUTLASS_PATH)/include' -I '$(CUTLASS_PATH)/tools/util/include' -I 'include' -I '$(LOGURU_PATH)'  
 INCLUDES := $(OBJ_INCLUDES), -L./ -L/usr/local/cuda-$(CUDA_VERSION)/lib64 -L$(CUTLASS_PATH)/build/tools/library
 
 TEST :=

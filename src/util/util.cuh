@@ -9,12 +9,12 @@
 #include <type_traits>
 #include <vector>
 
-#include "../gpu/DeviceData.h"
-#include "../globals.h"
-#include "../mpc/RSS.h"
-#include "../mpc/TPC.h"
-#include "../mpc/FPC.h"
-#include "../mpc/OPC.h"
+#include "gpu/DeviceData.h"
+#include "globals.h"
+#include "mpc/RSS.h"
+#include "mpc/TPC.h"
+#include "mpc/FPC.h"
+#include "mpc/OPC.h"
 
 #include <loguru.hpp>
 #define ASSERT_EPSILON 1e-3

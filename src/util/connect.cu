@@ -1,6 +1,6 @@
 
-#include "connect.h"
-#include "util.cuh"
+#include "util/connect.h"
+#include "util/util.cuh"
 
 #include <mutex> 
 #include <thread>

@@ -1,8 +1,8 @@
 
 #pragma once
 
-#include "LayerConfig.h"
-#include "../globals.h"
+#include "nn/LayerConfig.h"
+#include "globals.h"
 
 class MaxpoolConfig : public LayerConfig {
 public:

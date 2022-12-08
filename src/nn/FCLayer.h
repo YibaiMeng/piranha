@@ -1,14 +1,11 @@
 
 #pragma once
 
-#include "FCConfig.h"
-#include "Layer.h"
-//#include "../mpc/RSS.h"
-//#include "../mpc/TPC.h"
-//#include "../mpc/FPC.h"
-#include "../util/util.cuh"
-#include "../util/connect.h"
-#include "../globals.h"
+#include "nn/FCConfig.h"
+#include "nn/Layer.h"
+#include "util/util.cuh"
+#include "util/connect.h"
+#include "globals.h"
 
 extern int partyNum;
 

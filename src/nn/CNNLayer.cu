@@ -1,6 +1,6 @@
 #pragma once
 
-#include "CNNLayer.h"
+#include "nn/CNNLayer.h"
 #include <cutlass/conv/convolution.h>
 
 #include <math.h>
@@ -11,10 +11,10 @@
 #include <thrust/device_vector.h>
 #include <thrust/transform.h>
 
-#include "../mpc/RSS.h"
-#include "../mpc/TPC.h"
-#include "../mpc/FPC.h"
-#include "../mpc/OPC.h"
+#include "mpc/RSS.h"
+#include "mpc/TPC.h"
+#include "mpc/FPC.h"
+#include "mpc/OPC.h"
 
 extern Profiler debug_profiler;
 extern nlohmann::json piranha_config;
