@@ -20,6 +20,8 @@ public:
 	size_t numLayers = 0;
     std::string dataset = "";
 	vector<LayerConfig*> layerConf;
+    /// Which GPU the layer is stored on.
+    std::vector<int> layerCUDADevice;
 
 	NeuralNetConfig() {};
 
