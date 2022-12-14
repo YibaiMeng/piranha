@@ -574,23 +574,39 @@ void dividePublic(TPC<T, I> &a, DeviceData<T, I2> &denominators) {
 
 template<typename T, typename I, typename I2>
 void reconstruct(TPC<T, I> &in, DeviceData<T, I2> &out) {
-
+    LOG_S(1) << "Communication started, " << in.size() << " bytes";
     comm_profiler.start();
     // 1 - send shareA to next party
-    in.getShare(0)->transmit(TPC<T>::otherParty(partyNum));
-
     // 2 - receive shareA from previous party into DeviceBuffer 
-    DeviceData<T> rxShare(in.size());
-    rxShare.receive(TPC<T>::otherParty(partyNum));
-
-    in.getShare(0)->join();
-    rxShare.join();
+    // Functions to call different based on what we use.
+    switch(interparty_comm_buffer_mode) {
+        case INTERPARTY_COMM_BUFFER_MODE_CACHED_PIN: {
+            in.getShare(0)->transmit_no_malloc(TPC<T>::otherParty(partyNum));
+            out.receive_no_malloc(TPC<T>::otherParty(partyNum));
+            in.getShare(0)->join_no_malloc();
+            out.join_no_malloc(); 
+            break;
+        } case INTERPARTY_COMM_BUFFER_MODE_MALLOC_PAGE: {
+            in.getShare(0)->transmit(TPC<T>::otherParty(partyNum), false);
+            out.receive(TPC<T>::otherParty(partyNum), false);
+            in.getShare(0)->join(false);
+            out.join(false); 
+            break;
+        } case INTERPARTY_COMM_BUFFER_MODE_MALLOC_PIN: {
+            in.getShare(0)->transmit(TPC<T>::otherParty(partyNum), true);
+            out.receive(TPC<T>::otherParty(partyNum), true);
+            in.getShare(0)->join(true);
+            out.join(true); 
+            break;
+        } default: {
+            LOG_S(FATAL) << "This should not happen";
+        }
+    }
     comm_profiler.accumulate("comm-time");
+    LOG_S(1) << "Communication ended";
 
     // 3 - result is our shareB + received shareA
-    out.zero();
     out += *in.getShare(0);
-    out += rxShare;
 
     func_profiler.add_comm_round();
 }

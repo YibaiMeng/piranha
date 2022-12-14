@@ -31,6 +31,9 @@ Precompute PrecomputeObject;
 extern std::string *addrs;
 extern BmrNet **communicationSenders;
 extern BmrNet **communicationReceivers;
+// Pinned host buffer for interparty transfer.
+std::vector<void*> send_buffer_per_pipeline_group, recv_buffer_per_pipeline_group;
+int interparty_comm_buffer_mode;
 
 extern Profiler matmul_profiler;
 Profiler func_profiler;
@@ -100,6 +103,22 @@ int main(int argc, char** argv) {
         // TODO: document why the default value is 3.
         NUMCONNECTIONS = 3;
     }
+    if(piranha_config.find("interparty_comm_buffer_mode") == piranha_config.end() or piranha_config["interparty_comm_buffer_mode"] == "malloc_page") {
+        interparty_comm_buffer_mode = INTERPARTY_COMM_BUFFER_MODE_MALLOC_PAGE;
+        LOG_S(INFO) << "Interparty communication buffer mode is malloc page";
+    } else if(piranha_config["interparty_comm_buffer_mode"] == "malloc_pin") {
+        interparty_comm_buffer_mode = INTERPARTY_COMM_BUFFER_MODE_MALLOC_PIN;
+        LOG_S(INFO) << "Interparty communication buffer mode is malloc pin";
+    } else if(piranha_config["interparty_comm_buffer_mode"] == "cached_pin") {
+        interparty_comm_buffer_mode = INTERPARTY_COMM_BUFFER_MODE_CACHED_PIN;
+        LOG_S(INFO) << "Interparty communication buffer mode is cached pin";
+    } else {
+        LOG_S(ERROR) << "Invalid interparty communication buffer mode " << piranha_config["interparty_comm_buffer_mode"];
+        exit(-1);
+    }
+    LOG_S(1) << "Initializing device data cache";
+    initializeDeviceDataCache<uint64_t>();
+    LOG_S(1) << "Device data cache initialized";
     initializeCommunication(party_ips, partyNum, piranha_config["num_parties"]);
 
     synchronize(10000, piranha_config["num_parties"]); // wait for everyone to show up :)
@@ -212,6 +231,7 @@ int main(int argc, char** argv) {
     //aes_objects.clear();
 
     deleteObjects();
+    freeDeviceDataCache<uint64_t>();
 
     // wait a bit for the prints to flush
     std::cout << std::flush;
