@@ -16,11 +16,11 @@ Profiler AveragepoolLayer<T, Share>::averagepool_profiler;
 template<typename T, template<typename, typename...> typename Share>
 AveragepoolLayer<T, Share>::AveragepoolLayer(AveragepoolConfig* conf, int _layerNum, int seed) : Layer<T, Share>(_layerNum),
  	conf(conf->imageHeight, conf->imageWidth, conf->features, 
-	  		conf->poolSize, conf->stride, conf->batchSize),
- 	activations(conf->batchSize * conf->features * 
+	  		conf->poolSize, conf->stride, conf->batchSize, conf->microBatchSize),
+ 	_activations(conf->batchSize * conf->features * 
 			(((conf->imageWidth - conf->poolSize)/conf->stride) + 1) * 
  		    (((conf->imageHeight - conf->poolSize)/conf->stride) + 1)),
- 	deltas(conf->batchSize * conf->features * conf->imageHeight * conf->imageWidth) {
+ 	_deltas(conf->batchSize * conf->features * conf->imageHeight * conf->imageWidth) {
 	// nothing
 };
 
@@ -57,15 +57,23 @@ void AveragepoolLayer<T, Share>::forward(const Share<T> &input, int micro_batch_
 
     this->layer_profiler.start();
     averagepool_profiler.start();
-
-    activations.zero();
+    // Get a "view" of the activation that is only relevant to the current micro batch.
+    Share<T>* activations; 
+    if(micro_batch_idx == -1) {
+        activations = &_activations;
+    } else {
+        CHECK_F(input.size()  == MICRO_BATCH_SIZE * conf.imageHeight * conf.imageWidth * conf.features, "the size of input must be consistent with the number of elements per microbatch");
+        int activation_microbatch_size = _activations.size() / conf.batchSize * MICRO_BATCH_SIZE;
+        activations = new Share<T>(_activations, micro_batch_idx * activation_microbatch_size, (micro_batch_idx+1) * activation_microbatch_size); 
+    }
+    activations->zero();
 
     Share<T> pools((size_t)0);
     for(int share = 0; share < Share<T>::numShares(); share++) {
         gpu::averagepool_im2row(
                 input.getShare(share),
                 pools.getShare(share),
-                conf.imageWidth, conf.imageHeight, conf.poolSize, conf.features, conf.batchSize,
+                conf.imageWidth, conf.imageHeight, conf.poolSize, conf.features, MICRO_BATCH_SIZE,
                 conf.stride, 0
         );
     }
@@ -73,20 +81,20 @@ void AveragepoolLayer<T, Share>::forward(const Share<T> &input, int micro_batch_
     for(int share = 0; share < Share<T>::numShares(); share++) {
         gpu::reduceSum(
             pools.getShare(share),
-            activations.getShare(share),
-            false, activations.size(), conf.poolSize * conf.poolSize
+            activations->getShare(share),
+            false, activations->size(), conf.poolSize * conf.poolSize
         );
     }
 
-    dividePublic(activations, (T)(conf.poolSize * conf.poolSize));
+    dividePublic(*activations, (T)(conf.poolSize * conf.poolSize));
 
     this->layer_profiler.accumulate("averagepool-forward");
     averagepool_profiler.accumulate("averagepool-forward");
 
     if (piranha_config["debug_all_forward"]) {
         //printShareTensor(*const_cast<Share<T> *>(&activations), "fw pass activations (n=1)", 1, 1, 1, activations.size() / conf.batchSize);
-        std::vector<double> vals(activations.size());
-        copyToHost(activations, vals);
+        std::vector<double> vals(activations->size());
+        copyToHost(*activations, vals);
         
         printf("avgpool,fw activation,min,%e,avg,%e,max,%e\n", 
                 *std::min_element(vals.begin(), vals.end()),
@@ -117,15 +125,22 @@ void AveragepoolLayer<T, Share>::backward(const Share<T> &delta, const Share<T> 
 
     this->layer_profiler.start();
     averagepool_profiler.start();
-
-    this->deltas.zero();
-
+    Share<T>* deltas; 
+    if(micro_batch_idx == -1) {
+        deltas = &_deltas;
+    } else {
+        CHECK_F(delta.size() == _activations.size() / conf.batchSize * MICRO_BATCH_SIZE, "size of input delta is %i instead of %i", delta.size(), _activations.size() / conf.batchSize * MICRO_BATCH_SIZE);
+        CHECK_F(forwardInput.size()  == MICRO_BATCH_SIZE * conf.imageHeight * conf.imageWidth * conf.features, "the size of forwardInput must be consistent with the number of elements per microbatch");
+        int size_per_micro_batch = conf.imageHeight * conf.imageWidth * conf.features * MICRO_BATCH_SIZE;
+        deltas = new Share<T>(_deltas, micro_batch_idx * size_per_micro_batch, (micro_batch_idx + 1) * size_per_micro_batch); 
+    }
+    deltas->zero();
     for (int share = 0; share < Share<T>::numShares(); share++) {
-        gpu::averagepool_expand_delta(delta.getShare(share), deltas.getShare(share),
+        gpu::averagepool_expand_delta(delta.getShare(share), deltas->getShare(share),
                 (int)conf.features, (int)(conf.poolSize * conf.poolSize));
     }
 
-    dividePublic(deltas, (T)(conf.poolSize * conf.poolSize));
+    dividePublic(*deltas, (T)(conf.poolSize * conf.poolSize));
 
     averagepool_profiler.accumulate("averagepool-backward");
     this->layer_profiler.accumulate("averagepool-backward");

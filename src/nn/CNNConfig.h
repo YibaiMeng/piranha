@@ -26,7 +26,7 @@ public:
 	size_t poolSizeY = 1;
 
 	CNNConfig(size_t _imageHeight, size_t _imageWidth, size_t _inputFeatures, size_t _outputFeatures, 
-	size_t _filterSize, size_t _stride, size_t _padding, size_t _batchSize)
+	size_t _filterSize, size_t _stride, size_t _padding, size_t _batchSize, size_t _microBatchSize=0)
 	:imageHeight(_imageHeight),
 	 imageWidth(_imageWidth),
 	 inputFeatures(_inputFeatures),
@@ -35,6 +35,7 @@ public:
 	 stride(_stride),
 	 padding(_padding),
 	 batchSize(_batchSize),
+	 microBatchSize(_microBatchSize),
 	 LayerConfig("CNN")
 	{
         //cout << imageWidth << " " << imageHeight << " " << filterSize << " " << padding << " " << stride << endl;  

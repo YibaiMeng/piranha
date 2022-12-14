@@ -18,11 +18,12 @@ class ResLayerConfig : public LayerConfig {
         size_t stride;        
         size_t expansion;
 
-        ResLayerConfig(size_t _batchSize, size_t _imageHeight, size_t _imageWidth,
+        ResLayerConfig(size_t _batchSize, size_t _microBatchSize, size_t _imageHeight, size_t _imageWidth,
                 size_t _in_planes, size_t _planes,
                 size_t _num_blocks, size_t _stride, size_t _expansion) :
             LayerConfig("Res"),
             batchSize(_batchSize),
+            microBatchSize(_microBatchSize),
             imageHeight(_imageHeight),
             imageWidth(_imageWidth),
             in_planes(_in_planes),

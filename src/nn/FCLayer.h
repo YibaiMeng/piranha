@@ -18,8 +18,8 @@ class FCLayer : public Layer<T, Share> {
         Share<T> weights;
         Share<T> biases;
 
-        Share<T> activations;
-        Share<T> deltas;
+        Share<T> _activations;
+        Share<T> _deltas;
 
     public:
         //Constructor and initializer
@@ -30,12 +30,12 @@ class FCLayer : public Layer<T, Share> {
         void loadSnapshot(std::string path) override;
         void saveSnapshot(std::string path) override;
         void printLayer() override;
-        void forward(const Share<T> &input) override;
-        void backward(const Share<T> &delta, const Share<T> &forwardInput) override;
+        void forward(const Share<T> &input, int micro_batch_idx=-1) override;
+        void backward(const Share<T> &delta, const Share<T> &forwardInput, int micro_batch_idx=-1) override;
 
         //Getters
-        Share<T>* getActivation() {return &activations;};
+        Share<T>* getActivation() {return &_activations;};
         Share<T>* getWeights() {return &weights;};
         Share<T>* getBiases() {return &biases;};
-        Share<T>* getDelta() {return &deltas;};
+        Share<T>* getDelta() {return &_deltas;};
 };

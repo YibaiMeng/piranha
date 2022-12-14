@@ -22,7 +22,7 @@ extern Profiler debug_profiler;
 template<typename T, template<typename, typename...> typename Share>
 ResLayer<T, Share>::ResLayer(ResLayerConfig* conf, int _layerNum, int seed) :
     Layer<T, Share>(_layerNum),
-    conf(conf->batchSize, conf->imageHeight, conf->imageWidth, conf->in_planes,
+    conf(conf->batchSize, conf->microBatchSize, conf->imageHeight, conf->imageWidth, conf->in_planes,
     conf->planes, conf->num_blocks, conf->stride, conf->expansion) {
 
     size_t ih = this->conf.imageHeight;
@@ -48,7 +48,7 @@ void ResLayer<T, Share>::appendBlock(size_t &ih, size_t &iw, size_t in_planes, s
     //std::cout << conf.imageHeight << " " << conf.imageWidth << " " << in_planes << " " << planes << " 3 1 " << stride << std::endl;  
     // Conv Layer 1
     CNNConfig cnn1_config(ih, iw, in_planes, planes,
-            3, stride, 1, conf.batchSize);
+            3, stride, 1, conf.batchSize, conf.microBatchSize);
     block->push_back(new CNNLayer<T, Share>(&cnn1_config, layer_ctr++, base_seed + 0));
 
     //printf("CNN1 ih %d iw %d din %d dout %d filter size %d stride %d padding %d batch size %d\n", ih, iw, in_planes, planes, 3, stride, 1, conf.batchSize);
@@ -60,7 +60,7 @@ void ResLayer<T, Share>::appendBlock(size_t &ih, size_t &iw, size_t in_planes, s
         
         // Conv Layer 3
         CNNConfig cnn3_config(ih, iw, in_planes, conf.expansion * planes,
-                1, stride, 0, conf.batchSize);
+                1, stride, 0, conf.batchSize, conf.microBatchSize);
         shortcut->push_back(new CNNLayer<T, Share>(&cnn3_config, layer_ctr++, base_seed + 2));
         
         // LN Layer 3
@@ -77,27 +77,27 @@ void ResLayer<T, Share>::appendBlock(size_t &ih, size_t &iw, size_t in_planes, s
     iw = ((iw + 2 * 1 - 3) / stride) + 1;
 
     // LN Layer 1
-    LNConfig bn1_config(iw * ih * planes, conf.batchSize);
+    LNConfig bn1_config(iw * ih * planes, conf.batchSize, conf.microBatchSize);
     block->push_back(new LNLayer<T, Share>(&bn1_config, layer_ctr++, 0)); // no need for seed
 
     // ReLU layer 1
-    ReLUConfig relu1_config(iw * ih * planes, conf.batchSize);
+    ReLUConfig relu1_config(iw * ih * planes, conf.batchSize, conf.microBatchSize);
     block->push_back(new ReLULayer<T, Share>(&relu1_config, layer_ctr++, 0));
 
     //printf("CNN2 ih %d iw %d din %d dout %d filter size %d stride %d padding %d batch size %d\n", ih, iw, planes, planes, 3, 1, 1, conf.batchSize);
 
     // Conv Layer 2
     CNNConfig cnn2_config(ih, iw, planes, planes,
-            3, 1, 1, conf.batchSize);
+            3, 1, 1, conf.batchSize, conf.microBatchSize);
     block->push_back(new CNNLayer<T, Share>(&cnn2_config, layer_ctr++, base_seed + 1));
 
     // LN Layer 2
-    LNConfig bn2_config(iw * ih * planes, conf.batchSize);
+    LNConfig bn2_config(iw * ih * planes, conf.batchSize, conf.microBatchSize);
     block->push_back(new LNLayer<T, Share>(&bn2_config, layer_ctr++, 0));
 
     // ReLU Layer 2
     //printf("iw %d, ih %d, planes %d\n", iw, ih, planes);
-    ReLUConfig relu2_config(iw * ih * planes, conf.batchSize);
+    ReLUConfig relu2_config(iw * ih * planes, conf.batchSize, conf.microBatchSize);
     block->push_back(new ReLULayer<T, Share>(&relu2_config, layer_ctr++, 0));
 
     auto last_layer = dynamic_cast<ReLULayer<T, Share> *>((*block)[5]);
