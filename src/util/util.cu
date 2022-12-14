@@ -24,25 +24,13 @@ void printMemUsage() {
 
     size_t free_byte;
     size_t total_byte;
-    
-    auto cuda_status = cudaMemGetInfo(&free_byte, &total_byte);
-    if (cudaSuccess != cuda_status){
-        printf("Error: cudaMemGetInfo failed with %s\n", cudaGetErrorString(cuda_status));
-        exit(1);
-    }
-
+    int device_id;
+    CUDA_CHECK(cudaGetDevice(&device_id));
+    CUDA_CHECK(cudaMemGetInfo(&free_byte, &total_byte));
     double free_db = (double)free_byte;
     double total_db = (double)total_byte;
     double used_db = total_db - free_db;
-
-    /*
-    printf("memory usage: used = %f, free = %f, total = %f\n",
-            used_db, free_db, total_db);
-
-    printf("memory usage: used = %f, free = %f, total = %f MB\n",
-            used_db/1024.0/1024.0, free_db/1024.0/1024.0, total_db/1024.0/1024.0);
-    */
-    //printf("Allocated DeviceBuffers: %f kB\n", ((double)db_bytes)/1024.0);
-    printf("Allocated DeviceBuffers: %f MB (layer max %f MB, overall max %f MB)\n", (double)db_bytes/1048576.0, (double)db_layer_max_bytes/1048576.0, (double)db_max_bytes/1048576.0);
+    LOG_F(INFO, "Memory usage on device %i: used = %f, free = %f, total = %f MiB",
+            device_id, used_db/1024.0/1024.0, free_db/1024.0/1024.0, total_db/1024.0/1024.0);
 }
 
