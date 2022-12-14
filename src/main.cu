@@ -36,7 +36,8 @@ extern Profiler matmul_profiler;
 Profiler func_profiler;
 Profiler memory_profiler;
 Profiler comm_profiler;
-Profiler debug_profiler;
+Profiler debug_profiler[10];
+Profiler pipeline_parallel_profiler[10];
 
 nlohmann::json piranha_config;
 

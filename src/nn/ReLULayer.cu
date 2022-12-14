@@ -10,7 +10,7 @@
 
 #include <numeric>
 
-extern Profiler debug_profiler;
+extern Profiler debug_profiler[10];
 
 extern nlohmann::json piranha_config;
 
@@ -55,7 +55,7 @@ void ReLULayer<T, Share>::forward(const Share<T> &input, int micro_batch_idx) {
         //printShareTensor(*const_cast<Share<T> *>(&input), "fw pass input (n=1)", 1, 1, 1, input.size() / conf.batchSize);
     }
 
-	log_print("ReLU.forward");
+	LOG_S(1) << "Executing ReLU.forward";
 
 	/*
 	size_t rows = conf.batchSize; // ???
@@ -65,6 +65,7 @@ void ReLULayer<T, Share>::forward(const Share<T> &input, int micro_batch_idx) {
 
     this->layer_profiler.start();
     relu_profiler.start();
+    debug_profiler[this->cudaDeviceID()].start();
     Share<T>* activations;
     Share<uint8_t>* reluPrime; 
     if(micro_batch_idx == -1) {
@@ -79,11 +80,9 @@ void ReLULayer<T, Share>::forward(const Share<T> &input, int micro_batch_idx) {
 
     ReLU(input, *activations, *reluPrime);
 
-    ReLU(input, activations, reluPrime);
-
-    debug_profiler.accumulate("relu-fw-fprop");
-    this->layer_profiler.accumulate("relu-forward");
-    relu_profiler.accumulate("relu-forward");
+    debug_profiler[this->cudaDeviceID()].accumulate("relu-fw-fprop"+std::to_string(micro_batch_idx));
+    this->layer_profiler.accumulate("relu-forward"+std::to_string(micro_batch_idx));
+    relu_profiler.accumulate("relu-forward"+std::to_string(micro_batch_idx));
 
     if (piranha_config["debug_all_forward"]) {
         //printShareTensor(*const_cast<Share<T> *>(&activations), "fw pass activations (n=1)", 1, 1, 1, activations.size() / conf.batchSize);
@@ -117,6 +116,8 @@ void ReLULayer<T, Share>::backward(const Share<T> &delta, const Share<T> &forwar
 
 	relu_profiler.start();
 	this->layer_profiler.start();
+    debug_profiler[this->cudaDeviceID()].start();
+    
     Share<T>* activations, *deltas; 
     Share<uint8_t>* reluPrime;
     if(micro_batch_idx == -1) {
@@ -141,9 +142,9 @@ void ReLULayer<T, Share>::backward(const Share<T> &delta, const Share<T> &forwar
     // (2) Compute gradients w.r.t. layer params and update
     // nothing for ReLU
 
-    debug_profiler.accumulate("relu-bw");
-    relu_profiler.accumulate("relu-backward");
-    this->layer_profiler.accumulate("relu-backward");
+    debug_profiler[this->cudaDeviceID()].accumulate("relu-bw"+std::to_string(micro_batch_idx));
+    relu_profiler.accumulate("relu-backward"+std::to_string(micro_batch_idx));
+    this->layer_profiler.accumulate("relu-backward"+std::to_string(micro_batch_idx));
 
     //return deltas;
 }

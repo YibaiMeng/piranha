@@ -16,7 +16,7 @@ Profiler MaxpoolLayer<T, Share>::maxpool_profiler;
 template<typename T, template<typename, typename...> typename Share>
 MaxpoolLayer<T, Share>::MaxpoolLayer(MaxpoolConfig* conf, int _layerNum, int seed) : Layer<T, Share>(_layerNum),
  	conf(conf->imageHeight, conf->imageWidth, conf->features, 
-	  		conf->poolSize, conf->stride, conf->batchSize),
+	  		conf->poolSize, conf->stride, conf->batchSize, conf->microBatchSize),
  	activations(conf->batchSize * conf->features * 
 			(((conf->imageWidth - conf->poolSize)/conf->stride) + 1) * 
  		    (((conf->imageHeight - conf->poolSize)/conf->stride) + 1)),
@@ -115,8 +115,8 @@ void MaxpoolLayer<T, Share>::forward(const Share<T> &input, int micro_batch_idx)
         gpu::truncate_cols(expandedMaxPrime.getShare(share), maxPrime.getShare(share), pools.size() / expandedPoolSize, expandedPoolSize, conf.poolSize * conf.poolSize);
     }
 
-    this->layer_profiler.accumulate("maxpool-forward");
-    maxpool_profiler.accumulate("maxpool-forward");
+    this->layer_profiler.accumulate("maxpool-forward"+std::to_string(micro_batch_idx));
+    maxpool_profiler.accumulate("maxpool-forward"+std::to_string(micro_batch_idx));
 
     if (piranha_config["debug_all_forward"]) {
         //printShareTensor(*const_cast<Share<T> *>(&activations), "fw pass activations (n=1)", 1, 1, 1, activations.size() / conf.batchSize);
@@ -180,8 +180,8 @@ void MaxpoolLayer<T, Share>::backward(const Share<T> &delta, const Share<T> &for
     // (2) Compute gradients w.r.t. layer params and update
     // nothing for maxpool
 
-    maxpool_profiler.accumulate("maxpool-backward");
-    this->layer_profiler.accumulate("maxpool-backward");
+    maxpool_profiler.accumulate("maxpool-backward"+std::to_string(micro_batch_idx));
+    this->layer_profiler.accumulate("maxpool-backward"+std::to_string(micro_batch_idx));
 }
 
 template class MaxpoolLayer<uint32_t, RSS>;

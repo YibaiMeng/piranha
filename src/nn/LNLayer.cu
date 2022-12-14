@@ -9,7 +9,7 @@
 #include <math.h>
 #include <numeric>
 
-extern Profiler debug_profiler;
+extern Profiler debug_profiler[10];
 extern nlohmann::json piranha_config;
 
 template<typename T, template<typename, typename...> typename Share>
@@ -70,7 +70,7 @@ void LNLayer<T, Share>::forward(const Share<T> &input, int micro_batch_idx) {
         //printShareTensor(*const_cast<Share<T> *>(&input), "fw pass input (n=1)", 1, 1, 1, input.size() / conf.numBatches);
     }
 
-    debug_profiler.start();
+    debug_profiler[this->cudaDeviceID()].start();
 
     activations.zero();
     xhat.zero();
@@ -147,7 +147,7 @@ void LNLayer<T, Share>::forward(const Share<T> &input, int micro_batch_idx) {
     dividePublic(activations, (T)1 << FLOAT_PRECISION);
     activations += expandedBeta;
 
-    debug_profiler.accumulate("bn-forward");
+    debug_profiler[this->cudaDeviceID()].accumulate("bn-forward");
 
     if (piranha_config["debug_all_forward"]) {
         //printShareTensor(*const_cast<Share<T> *>(&activations), "fw pass activations (n=1)", 1, 1, 1, activations.size() / conf.numBatches);
@@ -180,7 +180,7 @@ void LNLayer<T, Share>::backward(const Share<T> &delta, const Share<T> &forwardI
                 *std::max_element(vals.begin(), vals.end()));
     }
 
-    debug_profiler.start();
+    debug_profiler[this->cudaDeviceID()].start();
 
     this->deltas.zero();
 
@@ -284,7 +284,7 @@ void LNLayer<T, Share>::backward(const Share<T> &delta, const Share<T> &forwardI
     gamma -= dGamma;
     beta -= dBeta;
 
-    debug_profiler.accumulate("bn-backward");
+    debug_profiler[this->cudaDeviceID()].accumulate("bn-backward");
 }
 
 template class LNLayer<uint32_t, RSS>;

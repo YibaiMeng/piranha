@@ -16,7 +16,7 @@
 #include "mpc/FPC.h"
 #include "mpc/OPC.h"
 
-extern Profiler debug_profiler;
+extern Profiler debug_profiler[10];
 extern nlohmann::json piranha_config;
 
 template<typename T, template<typename, typename...> typename Share>
@@ -79,7 +79,8 @@ void CNNLayer<T, Share>::printLayer()
 
 template<typename T, template<typename, typename...> typename Share>
 void CNNLayer<T, Share>::forward(const Share<T> &input, int micro_batch_idx) {
-
+    int current_gpu;
+    CUDA_CHECK(cudaGetDevice(&current_gpu));
     if (piranha_config["debug_all_forward"]) {
         printf("layer %d\n", this->layerNum);
         //printShareTensor(*const_cast<Share<T> *>(&input), "fw pass input (n=1)", 1, 1, 1, input.size() / conf.batchSize);
@@ -88,7 +89,7 @@ void CNNLayer<T, Share>::forward(const Share<T> &input, int micro_batch_idx) {
 	LOG_S(1) << "Executing CNN.forward";
 
     this->layer_profiler.start();
-    debug_profiler.start();
+    debug_profiler[current_gpu].start();
 
     // Get a "view" of the activation that is only relevant to the current micro batch.
     Share<T>* activations; 
@@ -106,8 +107,8 @@ void CNNLayer<T, Share>::forward(const Share<T> &input, int micro_batch_idx) {
             MICRO_BATCH_SIZE, conf.imageHeight, conf.imageWidth, conf.filterSize,
             conf.inputFeatures, conf.outputFeatures, conf.stride, conf.padding, FLOAT_PRECISION);
 
-    debug_profiler.accumulate("cnn-fw-fprop");
-    this->layer_profiler.accumulate("cnn-fw-fprop");
+    debug_profiler[current_gpu].accumulate("cnn-fw-fprop"+std::to_string(micro_batch_idx));
+    this->layer_profiler.accumulate("cnn-fw-fprop"+std::to_string(micro_batch_idx));
     //std::cout << "convolution forward done" << std::endl << std::endl;
     //DeviceBuffer<T>::printMemUsage();
 
@@ -143,7 +144,8 @@ void CNNLayer<T, Share>::backward(const Share<T> &delta, const Share<T> &forward
 
     // dL/dX
 
-    debug_profiler.start();
+    debug_profiler[this->cudaDeviceID()].start();
+    this->layer_profiler.start();
 
     Share<T>* deltas; 
     if(micro_batch_idx == -1) {
@@ -161,11 +163,11 @@ void CNNLayer<T, Share>::backward(const Share<T> &delta, const Share<T> &forward
             MICRO_BATCH_SIZE, conf.imageHeight, conf.imageWidth, conf.filterSize,
             conf.inputFeatures, conf.outputFeatures, conf.stride, conf.padding, FLOAT_PRECISION);
 
-    debug_profiler.accumulate("cnn-bw-dgrad");
+    debug_profiler[this->cudaDeviceID()].accumulate("cnn-bw-dgrad"+std::to_string(micro_batch_idx));
 
     // dL/dF
 
-    debug_profiler.start();
+    debug_profiler[this->cudaDeviceID()].start();
 
     Share<T> dF(weights.size());
 
@@ -203,14 +205,17 @@ void CNNLayer<T, Share>::backward(const Share<T> &delta, const Share<T> &forward
 
     //if (this->layerNum == 0) return;
 
-    debug_profiler.accumulate("cnn-bw-wgrad");
+    debug_profiler[this->cudaDeviceID()].accumulate("cnn-bw-wgrad"+std::to_string(micro_batch_idx));
+    this->layer_profiler.accumulate("cnn-bw-wgrad"+std::to_string(micro_batch_idx));
 
-    debug_profiler.start();
+    debug_profiler[this->cudaDeviceID()].start();
+    this->layer_profiler.start();
 
     dividePublic(dF, (T)1 << log_learning_rate);
     weights -= dF;
 
-    debug_profiler.accumulate("cnn-bw-wupdate");
+    debug_profiler[this->cudaDeviceID()].accumulate("cnn-bw-wupdate"+std::to_string(micro_batch_idx));
+    this->layer_profiler.accumulate("cnn-bw-wupdate"+std::to_string(micro_batch_idx));
 
     // dL/db
     

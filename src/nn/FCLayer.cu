@@ -14,7 +14,7 @@
 
 #include <loguru.hpp>
 Profiler matmul_profiler;
-extern Profiler debug_profiler;
+extern Profiler debug_profiler[10];
 extern nlohmann::json piranha_config;
 
 template<typename T, template<typename, typename...> typename Share>
@@ -76,8 +76,8 @@ void FCLayer<T, Share>::printLayer() {
 }
 
 template<typename T, template<typename, typename...> typename Share>
-void FCLayer<T, Share>::forward(const Share<T> &input) {
-
+void FCLayer<T, Share>::forward(const Share<T> &input, int micro_batch_idx) {
+    CUDA_CHECK(cudaSetDevice(input.cudaDeviceID()));
     if (piranha_config["debug_all_forward"]) {
         printf("layer %d\n", this->layerNum);
         //printShareTensor(*const_cast<Share<T> *>(&input), "fw pass input (n=1)", 1, 1, 1, input.size() / conf.batchSize);
@@ -86,6 +86,8 @@ void FCLayer<T, Share>::forward(const Share<T> &input) {
 	LOG_S(1) << "Executing FC.forward";
 
     this->layer_profiler.start();
+    debug_profiler[this->cudaDeviceID()].start();
+    
     Share<T>* activations; 
     if(micro_batch_idx == -1) {
         activations = &_activations;
@@ -121,8 +123,8 @@ void FCLayer<T, Share>::forward(const Share<T> &input) {
         );
     }
     
-    debug_profiler.accumulate("fc-fw");
-    this->layer_profiler.accumulate("fc-forward");
+    debug_profiler[this->cudaDeviceID()].accumulate("fc-fw"+std::to_string(micro_batch_idx));
+    this->layer_profiler.accumulate("fc-forward"+std::to_string(micro_batch_idx));
 
     if (piranha_config["debug_all_forward"]) {
         std::vector<double> vals(activations->size());
@@ -166,7 +168,7 @@ void FCLayer<T, Share>::backward(const Share<T> &delta, const Share<T> &forwardI
     
 	LOG_S(1) << "Executing FC.backward";
     this->layer_profiler.start();
-    debug_profiler.start();
+    debug_profiler[this->cudaDeviceID()].start();
 
     deltas->zero();
 
@@ -236,8 +238,8 @@ void FCLayer<T, Share>::backward(const Share<T> &delta, const Share<T> &forwardI
     }
     biases -= db;
 
-    debug_profiler.accumulate("fc-backward");
-    this->layer_profiler.accumulate("fc-backward");
+    debug_profiler[this->cudaDeviceID()].accumulate("fc-backward"+std::to_string(micro_batch_idx));
+    this->layer_profiler.accumulate("fc-backward"+std::to_string(micro_batch_idx));
 }
 
 template class FCLayer<uint32_t, RSS>;

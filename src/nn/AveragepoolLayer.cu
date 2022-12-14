@@ -88,8 +88,8 @@ void AveragepoolLayer<T, Share>::forward(const Share<T> &input, int micro_batch_
 
     dividePublic(*activations, (T)(conf.poolSize * conf.poolSize));
 
-    this->layer_profiler.accumulate("averagepool-forward");
-    averagepool_profiler.accumulate("averagepool-forward");
+    this->layer_profiler.accumulate("averagepool-forward-"+std::to_string(micro_batch_idx));
+    averagepool_profiler.accumulate("averagepool-forward"+std::to_string(micro_batch_idx));
 
     if (piranha_config["debug_all_forward"]) {
         //printShareTensor(*const_cast<Share<T> *>(&activations), "fw pass activations (n=1)", 1, 1, 1, activations.size() / conf.batchSize);
@@ -142,8 +142,8 @@ void AveragepoolLayer<T, Share>::backward(const Share<T> &delta, const Share<T> 
 
     dividePublic(*deltas, (T)(conf.poolSize * conf.poolSize));
 
-    averagepool_profiler.accumulate("averagepool-backward");
-    this->layer_profiler.accumulate("averagepool-backward");
+    averagepool_profiler.accumulate("averagepool-backward"+std::to_string(micro_batch_idx));
+    this->layer_profiler.accumulate("averagepool-backward"+std::to_string(micro_batch_idx));
 }
 
 template class AveragepoolLayer<uint32_t, RSS>;

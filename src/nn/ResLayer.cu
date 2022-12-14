@@ -17,7 +17,7 @@
 #include "LNLayer.h"
 
 extern bool LARGE_NETWORK;
-extern Profiler debug_profiler;
+extern Profiler debug_profiler[10];
 
 template<typename T, template<typename, typename...> typename Share>
 ResLayer<T, Share>::ResLayer(ResLayerConfig* conf, int _layerNum, int seed) :
@@ -233,7 +233,7 @@ void ResLayer<T, Share>::forward(const Share<T> &input, int micro_batch_idx) {
         forwardBlock(i, *(this->blocks[i]), getBlockActivation(*(this->blocks[i-1])));
     }
 
-    this->layer_profiler.accumulate("res-fw");
+    this->layer_profiler.accumulate("res-fw"+std::to_string(micro_batch_idx));
 }
 
 template<typename T, template<typename, typename...> typename Share>
@@ -308,7 +308,7 @@ void ResLayer<T, Share>::backward(const Share<T> &deltas, const Share<T> &forwar
         backwardBlock(0, *(this->blocks[0]), getBlockDelta(*(this->blocks[1])), &forwardInput);
     }
 
-    this->layer_profiler.accumulate("res-bw");
+    this->layer_profiler.accumulate("res-bw"+std::to_string(micro_batch_idx));
 }
 
 template<typename T, template<typename, typename...> typename Share>
