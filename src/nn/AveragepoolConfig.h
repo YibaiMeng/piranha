@@ -15,13 +15,14 @@ public:
 	size_t microBatchSize = 0;
 
 	AveragepoolConfig(size_t _imageHeight, size_t _imageWidth, size_t _features, 
-				  size_t _poolSize, size_t _stride, size_t _batchSize) : LayerConfig("Averagepool"),
+				  size_t _poolSize, size_t _stride, size_t _batchSize, size_t _microBatchSize=0) : LayerConfig("Averagepool"),
 		imageHeight(_imageHeight),
 	 	imageWidth(_imageWidth),
 	 	features(_features),
 	 	poolSize(_poolSize),
 	 	stride(_stride),
-	 	batchSize(_batchSize) {
+	 	batchSize(_batchSize),
+		microBatchSize(_microBatchSize) {
 		//assert((imageWidth - poolSize)%stride == 0 && "Averagepool layer parameters incorrect");
 		//assert((imageHeight - poolSize)%stride == 0 && "Averagepool layer parameters incorrect");
 	};

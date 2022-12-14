@@ -89,12 +89,12 @@ class DeviceDataBase {
 
         void zero() {
             CUDA_CHECK(cudaSetDevice(this->cuda_device_id));
-            thrust::fill(begin(), end(), static_cast<T>(0));
+            THRUST_CHECK(thrust::fill(begin(), end(), static_cast<T>(0)));
         }
 
         void fill(T val) {
             CUDA_CHECK(cudaSetDevice(this->cuda_device_id));
-            thrust::fill(begin(), end(), val);
+            THRUST_CHECK(thrust::fill(begin(), end(), val));
         }
 
         void transmit(size_t party) {
@@ -144,19 +144,19 @@ class DeviceDataBase {
         // scalar overloads
         DeviceDataBase<T, Iterator> &operator+=(const T rhs) {
             CUDA_CHECK(cudaSetDevice(this->cuda_device_id));
-            thrust::transform(begin(), end(), begin(), scalar_plus_functor<T>(rhs));
+            THRUST_CHECK(thrust::transform(begin(), end(), begin(), scalar_plus_functor<T>(rhs)));
             return *this;
         }
 
         DeviceDataBase<T, Iterator> &operator-=(const T rhs) {
             CUDA_CHECK(cudaSetDevice(this->cuda_device_id));
-            thrust::transform(begin(), end(), begin(), scalar_minus_functor<T>(rhs));
+            THRUST_CHECK(thrust::transform(begin(), end(), begin(), scalar_minus_functor<T>(rhs)));
             return *this;
         }
 
         DeviceDataBase<T, Iterator> &operator*=(const T rhs) {
             CUDA_CHECK(cudaSetDevice(this->cuda_device_id));
-            thrust::transform(begin(), end(), begin(), scalar_mult_functor<T>(rhs));
+            THRUST_CHECK(thrust::transform(begin(), end(), begin(), scalar_mult_functor<T>(rhs)));
             return *this;
         }
         
@@ -168,13 +168,13 @@ class DeviceDataBase {
 
         DeviceDataBase<T, Iterator> &operator>>=(const T rhs) {
             CUDA_CHECK(cudaSetDevice(this->cuda_device_id));
-            thrust::transform(begin(), end(), begin(), scalar_arith_rshift_functor<T>(rhs));
+            THRUST_CHECK(thrust::transform(begin(), end(), begin(), scalar_arith_rshift_functor<T>(rhs)));
             return *this;
         }
 
         DeviceDataBase<T, Iterator> &operator<<=(const T rhs) {
             CUDA_CHECK(cudaSetDevice(this->cuda_device_id));
-            thrust::transform(begin(), end(), begin(), scalar_lshift_functor<T>(rhs));
+            THRUST_CHECK(thrust::transform(begin(), end(), begin(), scalar_lshift_functor<T>(rhs)));
             return *this;
         }
 
@@ -182,56 +182,56 @@ class DeviceDataBase {
         template<typename I2>
         DeviceDataBase<T, Iterator> &operator+=(const DeviceDataBase<T, I2> &rhs) {
             CUDA_CHECK(cudaSetDevice(this->cuda_device_id));
-            thrust::transform(this->begin(), this->end(), rhs.begin(), this->begin(), thrust::plus<T>());
+            THRUST_CHECK(thrust::transform(this->begin(), this->end(), rhs.begin(), this->begin(), thrust::plus<T>()));
             return *this;
         }
 
         template<typename I2>
         DeviceDataBase<T, Iterator> &operator-=(const DeviceDataBase<T, I2> &rhs) {
             CUDA_CHECK(cudaSetDevice(this->cuda_device_id));
-            thrust::transform(this->begin(), this->end(), rhs.begin(), this->begin(), thrust::minus<T>());
+            THRUST_CHECK(thrust::transform(this->begin(), this->end(), rhs.begin(), this->begin(), thrust::minus<T>()));
             return *this;
         }
 
         template<typename I2>
         DeviceDataBase<T, Iterator> &operator*=(const DeviceDataBase<T, I2> &rhs) {
             CUDA_CHECK(cudaSetDevice(this->cuda_device_id));
-            thrust::transform(this->begin(), this->end(), rhs.begin(), this->begin(), thrust::multiplies<T>());
+            THRUST_CHECK(thrust::transform(this->begin(), this->end(), rhs.begin(), this->begin(), thrust::multiplies<T>()));
             return *this;
         }
 
         template<typename I2>
         DeviceDataBase<T, Iterator> &operator/=(const DeviceDataBase<T, I2> &rhs) {
             CUDA_CHECK(cudaSetDevice(this->cuda_device_id));
-            thrust::transform(this->begin(), this->end(), rhs.begin(), this->begin(), signed_divide_functor<T>());
+            THRUST_CHECK(thrust::transform(this->begin(), this->end(), rhs.begin(), this->begin(), signed_divide_functor<T>()));
             return *this;
         }
 
         template<typename I2>
         DeviceDataBase<T, Iterator> &operator^=(const DeviceDataBase<T, I2> &rhs) {
             CUDA_CHECK(cudaSetDevice(this->cuda_device_id));
-            thrust::transform(this->begin(), this->end(), rhs.begin(), this->begin(), thrust::bit_xor<T>());
+            THRUST_CHECK(thrust::transform(this->begin(), this->end(), rhs.begin(), this->begin(), thrust::bit_xor<T>()));
             return *this;
         }
 
         template<typename I2>
         DeviceDataBase<T, Iterator> &operator&=(const DeviceDataBase<T, I2> &rhs) {
             CUDA_CHECK(cudaSetDevice(this->cuda_device_id));
-            thrust::transform(this->begin(), this->end(), rhs.begin(), this->begin(), thrust::bit_and<T>());
+            THRUST_CHECK(thrust::transform(this->begin(), this->end(), rhs.begin(), this->begin(), thrust::bit_and<T>()));
             return *this;
         }
 
         template<typename I2>
         DeviceDataBase<T, Iterator> &operator>>=(const DeviceDataBase<T, I2> &rhs) {
             CUDA_CHECK(cudaSetDevice(this->cuda_device_id));
-            thrust::transform(this->begin(), this->end(), rhs.begin(), this->begin(), arith_rshift_functor<T>());
+            THRUST_CHECK(thrust::transform(this->begin(), this->end(), rhs.begin(), this->begin(), arith_rshift_functor<T>()));
             return *this;
         }
 
         template<typename I2>
         DeviceDataBase<T, Iterator> &operator<<=(const DeviceDataBase<T, I2> &rhs) {
             CUDA_CHECK(cudaSetDevice(this->cuda_device_id));
-            thrust::transform(this->begin(), this->end(), rhs.begin(), this->begin(), lshift_functor<T>());
+            THRUST_CHECK(thrust::transform(this->begin(), this->end(), rhs.begin(), this->begin(), lshift_functor<T>()));
             return *this;
         }
 
@@ -288,8 +288,7 @@ class DeviceData<T, BufferIterator<T> > : public DeviceDataBase<T, BufferIterato
 
         DeviceData(std::initializer_list<T> il) : data(il.size()) {
             CUDA_CHECK(cudaSetDevice(this->cuda_device_id));
-            thrust::copy(il.begin(), il.end(), data.begin());
-            LOG_S(2) << "Device Data of size " << data.size() * sizeof(T) << " initialized on GPU "  << this->cudaDeviceID();
+            THRUST_CHECK(thrust::copy(il.begin(), il.end(), data.begin()));
             this->set(data.begin(), data.end());
 
             memory_profiler.track_alloc(il.size() * sizeof(T), this->cuda_device_id);
