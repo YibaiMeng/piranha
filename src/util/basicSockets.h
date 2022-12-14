@@ -91,11 +91,12 @@ public:
 
 
 class BmrNet {
+public:
+	std::vector<int> socketFd;
 private:
 	char * host;
 	unsigned int port;
 	bool is_JustServer;
-	int socketFd[NUMCONNECTIONS];
 	#ifdef _WIN32
 	    PCSTR Cport;
 		WSADATA wsa;

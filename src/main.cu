@@ -103,7 +103,7 @@ int main(int argc, char** argv) {
     initializeCommunication(party_ips, partyNum, piranha_config["num_parties"]);
 
     synchronize(10000, piranha_config["num_parties"]); // wait for everyone to show up :)
-    LOG_S(INFO) << "All " << piranha_config["num_parties"] << " have showed up" << std::endl;
+    LOG_S(INFO) << "All " << piranha_config["num_parties"] << " parties have showed up";
     for (size_t i = 0; i < piranha_config["num_parties"]; i++) {
         // --------------> AES_TODO
         //Get AES strings from file and create vector of AESObjects

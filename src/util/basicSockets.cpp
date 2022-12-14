@@ -48,7 +48,7 @@ using namespace std;
 /*GLOBAL VARIABLES - LIST OF IP ADDRESSES*/
 char** localIPaddrs;
 int numberOfAddresses;
-
+int NUMCONNECTIONS;
 //For communication measurements
 CommunicationObject commObject;
 
@@ -149,7 +149,7 @@ int getPartyNum(char* filename)
 
 }
 
-BmrNet::BmrNet(char* host, int portno) {
+BmrNet::BmrNet(char* host, int portno) : socketFd(NUMCONNECTIONS) {
 	this->port = portno;
 #ifdef _WIN32
 	this->Cport = (PCSTR)portno;
@@ -167,11 +167,10 @@ BmrNet::BmrNet(char* host, int portno) {
 
 }
 
-BmrNet::BmrNet(int portno) {
+BmrNet::BmrNet(int portno) : socketFd(NUMCONNECTIONS, -1) {
 	this->port = portno;
 	this->host = "";
 	this->is_JustServer = true;
-	for (int i = 0; i < NUMCONNECTIONS; i++) this->socketFd[i] = -1;
 #ifdef _WIN32
 	if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0)
 	{
@@ -194,8 +193,8 @@ bool BmrNet::listenNow(){
 	int serverSockFd;
 	socklen_t clilen;
 
-	struct sockaddr_in serv_addr, cli_addr[NUMCONNECTIONS];
-
+	struct sockaddr_in serv_addr;
+    std::vector<sockaddr_in> cli_addr(NUMCONNECTIONS);
 
 	serverSockFd = socket(AF_INET, SOCK_STREAM, 0);
 	if (serverSockFd < 0){
@@ -260,7 +259,7 @@ bool BmrNet::listenNow(){
 
 
 bool BmrNet::connectNow(){
-	struct sockaddr_in serv_addr[NUMCONNECTIONS];
+	std::vector<sockaddr_in> serv_addr(NUMCONNECTIONS);
 	struct hostent *server;
 	int n;
 
