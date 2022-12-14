@@ -7,7 +7,6 @@
 #include "util/connect.h"
 #include "nn/NeuralNetConfig.h"
 #include "nn/NeuralNetwork.h"
-#include "test/unitTests.h"
 #include "util/Profiler.h"
 #include "util/model.h"
 #include "nn/MaxpoolLayer.h"
@@ -18,8 +17,12 @@
 #include "mpc/OPC.h"
 #include "util/util.cuh"
 #include "../ext/cxxopts.hpp"
+#include "util/benchmark.cuh";
 #include <json.hpp>
 #include <loguru.cpp>
+
+#include <chrono>
+#include <thrust/device_vector.h>
 
 int partyNum;
 std::vector<AESObject*> aes_objects;
@@ -58,9 +61,26 @@ void test(NeuralNetwork<T, Share> *, std::ifstream &, std::ifstream &);
 void getBatch(std::ifstream &, std::istream_iterator<double> &, std::vector<double> &);
 void deleteObjects();
 
+
+void enableDeviceP2P() {
+    int old_device; CUDA_CHECK(cudaGetDevice(&old_device));
+    int deviceCount; CUDA_CHECK(cudaGetDeviceCount(&deviceCount));
+    for (int i = 0; i < deviceCount; i++) {
+        CUDA_CHECK(cudaSetDevice(i));
+        for (int j = 0; j < deviceCount; j++) {
+            int access; CUDA_CHECK(cudaDeviceCanAccessPeer(&access,i,j));
+            if (access) CUDA_CHECK(cudaDeviceEnablePeerAccess(j,0));
+        }
+    }
+    CUDA_CHECK(cudaSetDevice(old_device));
+}
+
 int main(int argc, char** argv) {
 
     loguru::init(argc, argv);
+    enableDeviceP2P();
+    benchmark_gemm(std::atoi(argv[1]), std::atoi(argv[2]), std::atoi(argv[3]));
+    return;
     // Parse options -- retrieve party id and config JSON
     cxxopts::Options options("piranha", "GPU-accelerated platform for MPC computation");
     options.add_options()
@@ -104,16 +124,6 @@ int main(int argc, char** argv) {
     //aes_indep = new AESObject(options.aes_indep_file);
     //aes_next = new AESObject(options.aes_next_file);
     //aes_prev = new AESObject(options.aes_prev_file);
-
-    // Unit tests
-    if (piranha_config["run_unit_tests"]) {
-        int returnCode = runTests(argc, argv);
-        if (returnCode != 0 || piranha_config["unit_test_only"]) {
-            exit(returnCode);
-        }
-    }
-
-    std::cout << "run unit tests? " << piranha_config["run_unit_tests"] << std::endl;
 
     NeuralNetConfig nn_config;
     std::cout << "config network: " << piranha_config["network"] << std::endl;

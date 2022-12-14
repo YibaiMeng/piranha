@@ -1,7 +1,7 @@
 
 #pragma once
 
-#include <gtest/gtest.h>
+// #include <gtest/gtest.h>
 #include <iostream>
 #include <string>
 #include <thrust/device_vector.h>
@@ -312,118 +312,6 @@ int bitwidth(T val) {
     return sizeof(T) * 8;
 }
 
-
-
-template<typename T, typename I>
-void assertDeviceData(DeviceData<T, I> &result, std::vector<double> &expected, bool convertFixed=true, double epsilon=ASSERT_EPSILON) {
-
-    ASSERT_EQ(result.size(), expected.size());
-    
-    std::vector<double> host_result(result.size());
-    copyToHost(result, host_result, convertFixed);
-
-    for(int i = 0; i < host_result.size(); i++) {
-        ASSERT_LE(fabs(host_result[i] - expected[i]), epsilon);
-    }
-}
-
-template<typename T, typename I, template<typename, typename...> typename Share>
-void assertShare(Share<T, I> &result, std::vector<double> &expected, bool convertFixed=true, double epsilon=ASSERT_EPSILON) {
-
-    ASSERT_EQ(result.size(), expected.size());
-
-    std::vector<double> host_result(result.size());
-    copyToHost(result, host_result, convertFixed);
-
-    for(int i = 0; i < host_result.size(); i++) {
-        ASSERT_LE(fabs(host_result[i] - expected[i]), epsilon);
-    }
-}
-
-template<typename T, typename I, template<typename, typename...> typename Share>
-void assertShare(Share<T, I> &result, Share<T, I> &expected, bool convertFixed=true, double epsilon=ASSERT_EPSILON) {
-
-    ASSERT_EQ(result.size(), expected.size());
-
-    std::vector<double> host_result(result.size());
-    copyToHost(result, host_result, convertFixed);
-
-    std::vector<double> host_expected(expected.size());
-    copyToHost(expected, host_expected, convertFixed);
-
-    for(int i = 0; i < host_result.size(); i++) {
-        ASSERT_LE(fabs(host_result[i] - host_expected[i]), epsilon);
-    }
-}
-
-template<typename T, typename I, template<typename, typename...> typename Share>
-void assertShareRelativeError(Share<T, I> &result, std::vector<double> &expected, bool convertFixed=true, double epsilon=RELATIVE_ASSERT_EPSILON) {
-
-    ASSERT_EQ(result.size(), expected.size());
-
-    std::vector<double> host_result(result.size());
-    copyToHost(result, host_result, convertFixed);
-
-    for(int i = 0; i < host_result.size(); i++) {
-        double error = fabs(host_result[i] - expected[i]);
-        if (expected[i] != 0) {
-            error /= expected[i];
-        }
-
-        ASSERT_LE(error, epsilon);
-    }
-}
-
-template<typename T, typename I, template<typename, typename...> typename Share>
-void assertShareRelativeError(Share<T, I> &result, Share<T, I> &expected, bool convertFixed=true, double epsilon=RELATIVE_ASSERT_EPSILON) {
-
-    ASSERT_EQ(result.size(), expected.size());
-
-    std::vector<double> host_result(result.size());
-    copyToHost(result, host_result, convertFixed);
-
-    std::vector<double> host_expected(expected.size());
-    copyToHost(expected, host_expected, convertFixed);
-
-    for(int i = 0; i < host_result.size(); i++) {
-        double error = fabs(host_result[i] - host_expected[i]);
-        if (host_expected[i] != 0) {
-            error /= host_expected[i];
-        }
-
-        ASSERT_LE(error, epsilon);
-    }
-}
-
-template<typename T, typename I, template<typename, typename...> typename Share>
-double averageShareRelativeError(Share<T, I> &result, Share<T, I> &expected, bool convertFixed=true) {
-
-    //ASSERT_EQ(result.size(), expected.size());
-
-    std::vector<double> host_result(result.size());
-    copyToHost(result, host_result, convertFixed);
-
-    std::vector<double> host_expected(expected.size());
-    copyToHost(expected, host_expected, convertFixed);
-
-    double max_error = 0.0;
-
-    double total_error = 0.0;
-    for(int i = 0; i < host_result.size(); i++) {
-        double error = fabs(host_result[i] - host_expected[i]);
-        if (host_expected[i] != 0) {
-            error /= host_expected[i];
-        }
-
-        if (error > max_error) max_error = error;
-        total_error += error;
-    }
-    printf("\t\tMAX error: %f\n", max_error);
-
-    return total_error / result.size();
-}
-
 #if __CUDA_ARCH__ < 600
 __device__ uint64_t atomicAdd(uint64_t *address, uint64_t val);
 #endif
-

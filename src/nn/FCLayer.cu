@@ -11,6 +11,7 @@
 #include "../mpc/TPC.h"
 #include "../mpc/FPC.h"
 #include "../mpc/OPC.h"
+#include <loguru.hpp>
 
 Profiler matmul_profiler;
 extern Profiler debug_profiler;
@@ -101,6 +102,7 @@ void FCLayer<T, Share>::forward(const Share<T> &input) {
     matmul(input, weights, activations,
             rows, columns, common_dim, true, true, true, (T)FLOAT_PRECISION);
     matmul_profiler.accumulate("fc-matmul");
+    LOG_F(1, "FC forward matmul: %lf", matmul_profiler.get_elapsed("fc-matmul"));
 
     //std::cout << "after matmul" << std::endl;
     //printMemUsage();
@@ -155,8 +157,11 @@ void FCLayer<T, Share>::backward(const Share<T> &delta, const Share<T> &forwardI
 
     // (1) Compute backwards gradient for previous layer
     // deltas = incomingDelta * W.T
+    matmul_profiler.start();
     matmul(delta, weights, this->deltas,
             conf.batchSize, conf.inputDim, conf.outputDim, true, false, true, (T)FLOAT_PRECISION);
+    matmul_profiler.accumulate("fc-matmul");
+    LOG_F(1, "FC backward matmul1: %lf", matmul_profiler.get_elapsed("fc-matmul"));
 
     // (2) Compute gradients w.r.t. weights and update
 
@@ -172,9 +177,12 @@ void FCLayer<T, Share>::backward(const Share<T> &delta, const Share<T> &forwardI
         }
     }
 
+    matmul_profiler.start();
     matmul(delta, forwardInput, dW,
             conf.outputDim, conf.inputDim, conf.batchSize, false, true, false,
             (T)(FLOAT_PRECISION + log_learning_rate));
+    matmul_profiler.accumulate("fc-matmul");
+    LOG_F(1, "FC backward matmul1: %lf", matmul_profiler.get_elapsed("fc-matmul"));
 
     if (piranha_config["debug_all_backward"]) {
         if (this->layerNum == 7) {

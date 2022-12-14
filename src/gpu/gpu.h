@@ -2,13 +2,14 @@
 #pragma once
 #include <loguru.hpp>
 #define CUTLASS_CHECK(status)                                                                      \
-{                                                                                                  \
-    cutlass::Status error = status;                                                                \
-    if (error != cutlass::Status::kSuccess) {                                                      \
-        std::cerr << "Got cutlass error: " << cutlassGetStatusString(error) << " at: " << __LINE__ \
-                  << std::endl;                                                                    \
-    }                                                                                              \
-}
+    do {                                                                                           \
+        cutlass::Status err_ = status;                                                             \
+        if (err_ != cutlass::Status::kSuccess) {                                                   \
+            LOG_F(ERROR, "CUTLASS error %d at %s:%d\n", err_, __FILE__, __LINE__);                 \
+            throw std::runtime_error("CUTLASS error");                                                \
+        }                                                                                          \
+    } while (0)                                                                                    \
+ 
 
 #define CUDA_CHECK(err)                                                                            \
     do {                                                                                           \
