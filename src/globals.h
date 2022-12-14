@@ -28,6 +28,10 @@
 extern int MINI_BATCH_SIZE;
 extern int LOG_MINI_BATCH;
 
+// Size of the microbatch if pipelining is enabled.
+// Must be evenly divided by MINI BATCH size.
+extern int MICRO_BATCH_SIZE;
+extern int LOG_MICRO_BATCH;
 // learning rate = 2^(-LOG_LEARNING_RATE)
 extern int log_learning_rate;
 
