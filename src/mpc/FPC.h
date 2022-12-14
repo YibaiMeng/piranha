@@ -79,6 +79,14 @@ class FPCBase {
         FPCBase<T, I> &operator^=(const FPCBase<T, I2> &rhs);
         template<typename I2>
         FPCBase<T, I> &operator&=(const FPCBase<T, I2> &rhs);
+        
+        int cudaDeviceID() const {
+            if(shareA->cudaDeviceID() != shareB->cudaDeviceID() or shareA->cudaDeviceID() != shareC->cudaDeviceID()) {
+                LOG_S(FATAL) << "The shards of FPC are on different GPU devices.";
+            }
+            return shareA->cudaDeviceID();
+        }
+
 
     protected:
         
@@ -99,12 +107,14 @@ template<typename T>
 class FPC<T, BufferIterator<T> > : public FPCBase<T, BufferIterator<T> > {
 
     public:
-
+        FPC(FPC & i, int start_idx, int end_idx);
         FPC(DeviceData<T> *a, DeviceData<T> *b, DeviceData<T> *c);
         FPC(size_t n);
         FPC(std::initializer_list<double> il, bool convertToFixedPoint = true);
 
         void resize(size_t n);
+        void copySync(FPC& dst_share);
+        void copyAsync(FPC& dst_share, cudaStream_t stream);
 
     private:
 

@@ -8,6 +8,7 @@
 #include <initializer_list>
 
 #include <cutlass/conv/convolution.h>
+#include <loguru.hpp>
 
 #include "gpu/DeviceData.h"
 #include "globals.h"
@@ -68,6 +69,12 @@ class RSSBase {
         RSSBase<T, I> &operator^=(const RSSBase<T, I2> &rhs);
         template<typename I2>
         RSSBase<T, I> &operator&=(const RSSBase<T, I2> &rhs);
+        int cudaDeviceID() const {
+            if(shareA->cudaDeviceID() != shareB->cudaDeviceID()) {
+                LOG_S(FATAL) << "The shards of RSS is on different GPU devices.";
+            }
+            return shareA->cudaDeviceID();
+        }
 
     protected:
         
@@ -79,7 +86,6 @@ template<typename T, typename I = BufferIterator<T> >
 class RSS : public RSSBase<T, I> {
 
     public:
-
         RSS(DeviceData<T, I> *a, DeviceData<T, I> *b);
 };
 
@@ -88,11 +94,15 @@ class RSS<T, BufferIterator<T> > : public RSSBase<T, BufferIterator<T> > {
 
     public:
 
+        RSS(RSS & i, int start_idx, int end_idx);
         RSS(DeviceData<T> *a, DeviceData<T> *b);
         RSS(size_t n);
         RSS(std::initializer_list<double> il, bool convertToFixedPoint = true);
 
         void resize(size_t n);
+        void copySync(RSS& dst);
+        /// Asynchonously copy data to dst_share on another device;
+        void copyAsync(RSS& dst_share, cudaStream_t stream);
 
     private:
 

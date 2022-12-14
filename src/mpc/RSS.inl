@@ -22,6 +22,7 @@
 #include "util/functors.h"
 #include "util/Profiler.h"
 
+#include <loguru.hpp>
 
 extern Precompute PrecomputeObject;
 extern Profiler comm_profiler;
@@ -374,6 +375,17 @@ int RSSBase<T, I>::numShares() {
     return 2;
 }
 
+template<typename T>
+RSS<T, BufferIterator<T>>::RSS(RSS<T, BufferIterator<T>> & i, int start_idx, int end_idx) : RSS<T,BufferIterator<T>>(nullptr, nullptr) {
+    CHECK_F(start_idx < end_idx, "Start index must be smaller than end index");
+    CHECK_F(end_idx <= i.size(), "End index must be within the size of input i");
+    CHECK_F(start_idx >= 0);
+    // Must set cudaDeviceID, as this is how the DeviceData stores the device id; 
+    CUDA_CHECK(cudaSetDevice(i.cudaDeviceID()));
+    this->shareA = new DeviceData<T>(i.getShare(0)->begin() + start_idx, i.getShare(0)->begin() + end_idx);
+    this->shareB = new DeviceData<T>(i.getShare(1)->begin() + start_idx, i.getShare(1)->begin() + end_idx);
+}
+
 template<typename T, typename I>
 RSS<T, I>::RSS(DeviceData<T, I> *a, DeviceData<T, I> *b) : RSSBase<T, I>(a, b) {}
 
@@ -418,6 +430,19 @@ template<typename T>
 void RSS<T, BufferIterator<T> >::resize(size_t n) {
     _shareA.resize(n);
     _shareB.resize(n); 
+}
+
+template<typename T>
+void RSS<T, BufferIterator<T> >::copySync( RSS<T, BufferIterator<T> >& dst) {    
+    this->shareA->copyToDevice(*dst.shareA);
+    this->shareB->copyToDevice(*dst.shareB);
+}
+
+template<typename T>
+void RSS<T, BufferIterator<T> >::copyAsync(RSS<T, BufferIterator<T> >& dst, cudaStream_t stream) {    
+    // TODO: Evaluate whether we should have more streams, since GPUs may have more that one copying unit.
+    this->shareA->copyAsync(*dst.shareA, stream);
+    this->shareB->copyAsync(*dst.shareB, stream);
 }
 
 template<typename T, typename I>

@@ -65,7 +65,10 @@ class TPCBase {
         TPCBase<T, I> &operator^=(const TPCBase<T, I2> &rhs);
         template<typename I2>
         TPCBase<T, I> &operator&=(const TPCBase<T, I2> &rhs);
-
+        
+        int cudaDeviceID() const {
+            return shareA->cudaDeviceID();
+        }
     protected:
         
         DeviceData<T, I> *shareA;
@@ -83,12 +86,15 @@ template<typename T>
 class TPC<T, BufferIterator<T> > : public TPCBase<T, BufferIterator<T> > {
 
     public:
-
+        TPC(TPC & i, int start_idx, int end_idx);
         TPC(DeviceData<T> *a);
         TPC(size_t n);
         TPC(std::initializer_list<double> il, bool convertToFixedPoint = true);
 
         void resize(size_t n);
+        void copySync(TPC& dst);
+        /// Asynchonously copy data to dst_share on another device;
+        void copyAsync(TPC& dst_share, cudaStream_t stream);
 
     private:
 

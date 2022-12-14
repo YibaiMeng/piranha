@@ -23,6 +23,7 @@
 #include "util/Profiler.h"
 #include "util/util.cuh"
 
+#include <loguru.hpp>
 
 extern Precompute PrecomputeObject;
 extern Profiler func_profiler;
@@ -241,6 +242,16 @@ template<typename T, typename I>
 OPC<T, I>::OPC(DeviceData<T, I> *a) : OPCBase<T, I>(a) {}
 
 template<typename T>
+OPC<T, BufferIterator<T>>::OPC(OPC & i, int start_idx, int end_idx) : OPC<T, BufferIterator<T>>(nullptr) {
+    CHECK_F(start_idx < end_idx, "Start index must be smaller than end index");
+    CHECK_F(end_idx <= i.size(), "End index must be within the size of input i");
+    CHECK_F(start_idx >= 0);
+    // Must set cudaDeviceID, as this is how the DeviceData stores the device id; 
+    CUDA_CHECK(cudaSetDevice(i.cudaDeviceID()));
+    this->shareA = new DeviceData<T>(i.getShare(0)->begin() + start_idx, i.getShare(0)->begin() + end_idx);
+}
+
+template<typename T>
 OPC<T, BufferIterator<T> >::OPC(DeviceData<T> *a) :
     OPCBase<T, BufferIterator<T> >(a) {}
 
@@ -253,7 +264,7 @@ template<typename T>
 OPC<T, BufferIterator<T> >::OPC(std::initializer_list<double> il, bool convertToFixedPoint) :
     _shareA(il.size()),
     OPCBase<T, BufferIterator<T> >(&_shareA) {
-
+    CUDA_CHECK(cudaSetDevice(this->cudaDeviceID()));
     std::vector<T> shifted_vals;
     for (double f : il) {
         if (convertToFixedPoint) {
@@ -269,6 +280,16 @@ OPC<T, BufferIterator<T> >::OPC(std::initializer_list<double> il, bool convertTo
 template<typename T>
 void OPC<T, BufferIterator<T> >::resize(size_t n) {
     _shareA.resize(n);
+}
+
+template<typename T>
+void OPC<T, BufferIterator<T> >::copySync( OPC<T, BufferIterator<T> >& dst) {    
+    this->shareA->copyToDevice(*dst.shareA);
+}
+
+template<typename T>
+void OPC<T, BufferIterator<T> >::copyAsync( OPC<T, BufferIterator<T> >& dst, cudaStream_t stream) {    
+    this->shareA->copyAsync(*dst.shareA, stream);
 }
 
 template<typename T, typename I>
@@ -304,7 +325,7 @@ template<typename T, typename U, typename I, typename I2, typename I3, typename 
 void selectShare(const OPC<T, I> &x, const OPC<T, I2> &y, const OPC<U, I3> &b, OPC<T, I4> &z) {
 
     assert(x.size() == y.size() && x.size() == b.size() && x.size() == z.size() && "OPC selectShare input size mismatch");
-
+    assert(x.cudaDeviceID() == y.cudaDeviceID() &&  y.cudaDeviceID() == b.cudaDeviceID() &&  b.cudaDeviceID() ==  z.cudaDeviceID());
     thrust::for_each(
         thrust::make_zip_iterator(
             thrust::make_tuple(x.getShare(0)->begin(), y.getShare(0)->begin(), b.getShare(0)->begin(), z.getShare(0)->begin())
