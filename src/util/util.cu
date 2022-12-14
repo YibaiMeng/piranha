@@ -46,18 +46,3 @@ void printMemUsage() {
     printf("Allocated DeviceBuffers: %f MB (layer max %f MB, overall max %f MB)\n", (double)db_bytes/1048576.0, (double)db_layer_max_bytes/1048576.0, (double)db_max_bytes/1048576.0);
 }
 
-// docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#atomic-functions
-__device__ uint64_t atomicAdd(uint64_t *address, uint64_t val) {
-
-    unsigned long long int *addr_as_ull = (unsigned long long int *) address;
-    unsigned long long int old = *addr_as_ull, assumed;
-
-    do {
-        assumed = old;
-        old = atomicCAS(addr_as_ull, assumed, val + assumed);
-    // Note: uses integer comparison to avoid hang in case of NaN (since NaN != NaN)
-    } while (assumed != old);
-
-    return old;
-}
-

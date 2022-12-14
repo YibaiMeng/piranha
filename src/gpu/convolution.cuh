@@ -148,7 +148,7 @@ __global__ void maxpool_row2im(T *rows, T *output,
 
     int outputIdx = (batch * imageHeight * imageWidth * Din) + (valCol * imageHeight * Din) + (valRow * Din) + channel;
 
-    atomicAdd(&(output[outputIdx]), rows[CONV_WINDOW_IDX * (filterSize * filterSize) + VAL_IDX]);
+    atomicAdd((unsigned long long int*)&(output[outputIdx]), (unsigned long long int)rows[CONV_WINDOW_IDX * (filterSize * filterSize) + VAL_IDX]);
 }
 
 template<typename T>
