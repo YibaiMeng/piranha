@@ -35,12 +35,6 @@ void Profiler::clear() {
     bytes_tx = 0;
     bytes_rx = 0;
 
-    for(int i = 0; i < 8; i++) {
-       for(int j = 0; j < 8; j++) {
-            intergpu_bytes[i][j] = 0;
-        }
-    }
-
 }
 
 void Profiler::accumulate(std::string tag) {
@@ -65,11 +59,11 @@ double Profiler::get_elapsed_all() {
 }
 
 void Profiler::dump_all() {
-    std::cout << "Total: " << total << " ms" << std::endl;
+    LOG_S(1) << "Total: " << total << " ms";
     for (auto &s : accumulators) {
-        std::cout << "  " << s.first << ": " << s.second << " ms" << std::endl;
+        LOG_S(1) << "  " << s.first << ": " << s.second << " ms";
     }
-    std::cout << std::endl << "-------------------" << std::endl;
+    //std::cerr << std::endl << "-------------------" << std::endl;
 }
 
 void Profiler::track_alloc(size_t bytes, int gpu_id) {
@@ -94,7 +88,8 @@ void Profiler::tag_mem() {
     ).count();
 
     //std::cout << mem << std::endl;
-    tags.push_back(std::make_pair(ms_elapsed, mem_mb));
+    //TODO: make it work, although this function is not used, 
+    //tags.push_back(std::make_pair(ms_elapsed, mem_mb));
     //std::cout << "MEM," << ms_elapsed << "," << mem << std::endl;
 }
 
@@ -136,6 +131,18 @@ void Profiler::add_intergpu_comm_bytes(size_t bytes, int src_id, int dst_id) {
     intergpu_bytes[src_id][dst_id] += bytes;
 }
 
+void Profiler::print_intergpu_comm_bytes() {
+    std::stringstream ss;
+    for(int i = 0; i < 8; i++) {
+        for(int j = 0; j < 8; j++) {
+            if(intergpu_bytes[i][j] != 0) {
+               ss << i  <<" -> " << j <<" : " << intergpu_bytes[i][j] << ";";
+            }
+        }
+    }
+    LOG_S(0) << "Intergpu communication bytes: " << ss.str();
+
+}
 
 
 size_t Profiler::get_comm_tx_bytes() {

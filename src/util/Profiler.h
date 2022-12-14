@@ -32,12 +32,13 @@ public:
     size_t get_comm_tx_bytes();
     size_t get_comm_rx_bytes();
     void dump_comm_bytes();
+    void print_intergpu_comm_bytes();
+    std::map<std::string, double> accumulators;
 
 private:
 
     bool running;
     std::chrono::time_point<std::chrono::system_clock> start_time;
-    std::map<std::string, double> accumulators;
     double total;
 
     double mem_mb[10];
