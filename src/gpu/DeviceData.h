@@ -524,6 +524,19 @@ class DeviceData<T, BufferIterator<T> > : public DeviceDataBase<T, BufferIterato
             return -1;
         }        
 
+        void copyAsync(DeviceData& dst_buffer, cudaStream_t stream) {
+             CUDA_CHECK(cudaSetDevice(this->cuda_device_id));
+             if(dst_buffer.size() != this->size()) {
+                LOG_S(FATAL) << "Size of destination DeviceData different from source DeviceData.";
+             }
+             LOG_S(1) << "Initiate asynchronous copying of " << dst_buffer.size() * sizeof(T) << " bytes of data from " << this->cudaDeviceID() << " to " << dst_buffer.cudaDeviceID();
+             // We must cast the iterator, instead of casting data.data(), as data may be empty.
+             T* dst_ptr = thrust::raw_pointer_cast(&dst_buffer.begin()[0]);
+             T* src_ptr = thrust::raw_pointer_cast(&(this->begin()[0]));
+             comm_profiler.add_intergpu_comm_bytes(sizeof(T) * this->size(), this->cudaDeviceID(), dst_buffer.cudaDeviceID());
+             CUDA_CHECK(cudaMemcpyPeerAsync((void*)dst_ptr, dst_buffer.cudaDeviceID(), (void*)src_ptr, this->cudaDeviceID(), sizeof(T) * this->size(), stream));
+        }
+
     private:
         // stores which device data is on
         thrust::device_vector<T> data;
